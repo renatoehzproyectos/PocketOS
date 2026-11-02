@@ -12,9 +12,8 @@
         android:icon="@drawable/ic_launcher"
         android:theme="@style/Theme.PocketOS">
         <activity
-            android:name=".DesktopActivity"
+            android:name=".TouchpadActivity"
             android:exported="true"
-            android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|keyboard|keyboardHidden|navigation|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,6 +24,12 @@
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".DesktopActivity"
+            android:exported="true"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|keyboard|keyboardHidden|navigation|uiMode">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.SECONDARY_HOME" />

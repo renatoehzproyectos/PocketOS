@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import com.pocketos.core.applications.*
 import com.pocketos.core.storage.*
+import com.pocketos.core.input.Remote
 import com.pocketos.core.window.WindowManager
 import com.pocketos.design.Wallpapers
 import com.pocketos.applications.FileManager
@@ -37,6 +38,31 @@ fun Desktop(prefs: Preferences) {
     val wall = Wallpapers[(prefs[Keys.WALL] ?: 0).coerceIn(0, Wallpapers.lastIndex)]
     val favs = prefs.strList(Keys.FAVS)
     val recents = prefs.strList(Keys.RECENTS)
+
+    LaunchedEffect(Unit) {
+        Remote.cmds.collect { c ->
+            val here = wm.wins.filter { it.desk == desk }
+            when (c) {
+                "menu" -> menu = !menu
+                "back" -> {
+                    if (menu) menu = false
+                    else here.filter { !it.minimized }.maxByOrNull { it.z }?.let { wm.close(it) }
+                }
+                "home" -> {
+                    menu = false
+                    val vis = here.filter { !it.minimized }
+                    if (vis.isNotEmpty()) vis.forEach { it.minimized = true }
+                    else here.forEach { it.minimized = false }
+                }
+                "switch" -> {
+                    if (here.isNotEmpty()) {
+                        val i = here.indexOfFirst { it.id == wm.focusedId }
+                        wm.focus(here[(i + 1) % here.size])
+                    }
+                }
+            }
+        }
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
         val aw = maxWidth.value
