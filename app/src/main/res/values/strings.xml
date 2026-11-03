@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_desc">Permite que el touchpad de PocketOS toque, arrastre y escriba en las apps abiertas en la pantalla externa, y dibuja el cursor encima de ellas.</string>
+</resources>

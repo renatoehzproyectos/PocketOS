@@ -52,6 +52,7 @@ fun Modifier.touchpad(): Modifier = pointerInput(Unit) {
                     Pointer.scroll(dy / 25f)
                     ev.changes.forEach { it.consume() }
                 }
+                Pointer.scrollDone()
             }
             else -> {
                 Pointer.moveBy(total.x, total.y)

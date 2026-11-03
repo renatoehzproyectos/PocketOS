@@ -34,7 +34,7 @@ class DesktopActivity : ComponentActivity() {
             val c = WindowInsetsControllerCompat(window, window.decorView)
             c.hide(WindowInsetsCompat.Type.systemBars())
             c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            Pointer.attach(window.decorView)
+            Pointer.attach(window.decorView, display?.displayId ?: 0)
         }
         setContent {
             val prefs by store.data.collectAsState(initial = emptyPreferences())
@@ -43,10 +43,20 @@ class DesktopActivity : ComponentActivity() {
                     if (secondary) { Pointer.w = it.width.toFloat(); Pointer.h = it.height.toFloat() }
                 }) {
                     Desktop(prefs)
-                    if (secondary) CursorOverlay()
+                    if (secondary && !Pointer.overlayOn) CursorOverlay()
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (secondary) Pointer.desktopFocused = true
+    }
+
+    override fun onPause() {
+        if (secondary) Pointer.desktopFocused = false
+        super.onPause()
     }
 
     override fun onDestroy() {
