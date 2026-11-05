@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_desc">Permite que el touchpad de PocketOS toque, arrastre y escriba en las apps abiertas en la pantalla externa, y dibuja el cursor encima de ellas.</string>
+    <style name="Theme.PocketOS" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">#1B1E20</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

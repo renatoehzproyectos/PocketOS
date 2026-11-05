@@ -29,4 +29,5 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("com.caverock:androidsvg-aar:1.4")
 }

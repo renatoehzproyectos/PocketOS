@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_launcher
+string a11y_desc
+style Theme.PocketOS
+xml accessibility_service

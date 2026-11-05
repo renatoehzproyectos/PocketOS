@@ -15,8 +15,8 @@ data class AppInfo(
 )
 
 val Builtins = listOf(
-    AppInfo("Archivos", "pocketos:files", null, "📁"),
-    AppInfo("Ajustes", "pocketos:settings", null, "⚙"),
+    AppInfo("Dolphin", "pocketos:files", null, "📁"),
+    AppInfo("System Settings", "pocketos:settings", null, "⚙"),
 )
 
 fun loadApps(ctx: Context): List<AppInfo> {

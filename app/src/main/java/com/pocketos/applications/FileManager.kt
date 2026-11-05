@@ -35,7 +35,7 @@ fun FileManager() {
         Row(Modifier.fillMaxWidth().background(Breeze.Panel).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton({ if (dir != root) dir = dir.parentFile ?: dir }) { Text("↑") }
             TextButton({ tick++ }) { Text("⟳") }
-            TextButton({ newName = "" }) { Text("＋📁") }
+            TextButton({ newName = "" }) { Text("＋ Folder") }
             TextButton({
                 try {
                     ctx.startActivity(
@@ -43,11 +43,11 @@ fun FileManager() {
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
                 } catch (_: Exception) {}
-            }) { Text("🔑") }
+            }) { Text("Access") }
             Text(dir.path, color = Breeze.Muted, fontSize = 11.sp, maxLines = 1)
         }
         if (entries == null) {
-            Text("Sin acceso. Pulsa 🔑 y concede «Acceso a todos los archivos», luego ⟳.", color = Breeze.Text, modifier = Modifier.padding(16.dp))
+            Text("No access. Select Access and grant all-files access, then refresh.", color = Breeze.Text, modifier = Modifier.padding(16.dp))
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
                 items(entries) { f ->
@@ -68,24 +68,24 @@ fun FileManager() {
     toDelete?.let { f ->
         AlertDialog(
             onDismissRequest = { toDelete = null },
-            title = { Text("Eliminar") },
-            text = { Text("¿Eliminar «${f.name}»?") },
-            confirmButton = { TextButton({ f.deleteRecursively(); toDelete = null; tick++ }) { Text("Eliminar") } },
-            dismissButton = { TextButton({ toDelete = null }) { Text("Cancelar") } },
+            title = { Text("Delete") },
+            text = { Text("Delete “${f.name}”?") },
+            confirmButton = { TextButton({ f.deleteRecursively(); toDelete = null; tick++ }) { Text("Delete") } },
+            dismissButton = { TextButton({ toDelete = null }) { Text("Cancel") } },
         )
     }
     newName?.let { n ->
         AlertDialog(
             onDismissRequest = { newName = null },
-            title = { Text("Nueva carpeta") },
+            title = { Text("New Folder") },
             text = { TextField(n, { newName = it }, singleLine = true) },
             confirmButton = {
                 TextButton({
                     if (n.isNotBlank()) File(dir, n).mkdirs()
                     newName = null; tick++
-                }) { Text("Crear") }
+                }) { Text("Create") }
             },
-            dismissButton = { TextButton({ newName = null }) { Text("Cancelar") } },
+            dismissButton = { TextButton({ newName = null }) { Text("Cancel") } },
         )
     }
 }

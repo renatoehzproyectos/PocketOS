@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
@@ -38,12 +41,16 @@ class DesktopActivity : ComponentActivity() {
         }
         setContent {
             val prefs by store.data.collectAsState(initial = emptyPreferences())
+            val systemDensity = LocalDensity.current
+            val shellDensity = if (secondary) Density(1f, 1f) else systemDensity
             PocketTheme(Color(prefs[Keys.ACCENT] ?: Accents[0])) {
-                Box(Modifier.fillMaxSize().onSizeChanged {
-                    if (secondary) { Pointer.w = it.width.toFloat(); Pointer.h = it.height.toFloat() }
-                }) {
-                    Desktop(prefs)
-                    if (secondary && !Pointer.overlayOn) CursorOverlay()
+                CompositionLocalProvider(LocalDensity provides shellDensity) {
+                    Box(Modifier.fillMaxSize().onSizeChanged {
+                        if (secondary) { Pointer.w = it.width.toFloat(); Pointer.h = it.height.toFloat() }
+                    }) {
+                        Desktop(prefs)
+                        if (secondary && !Pointer.overlayOn) CursorOverlay()
+                    }
                 }
             }
         }

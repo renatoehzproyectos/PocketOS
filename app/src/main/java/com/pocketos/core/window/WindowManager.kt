@@ -24,10 +24,16 @@ class WindowManager {
     fun open(kind: String, title: String, desk: Int, areaW: Float, areaH: Float) {
         wins.find { it.kind == kind && it.desk == desk }?.let { focus(it); return }
         val n = wins.count { it.desk == desk }
+        val windowW = minOf(930f, areaW * .485f).coerceAtLeast(280f).coerceAtMost(areaW)
+        val windowH = minOf(680f, areaH * .72f).coerceAtLeast(220f).coerceAtMost(areaH)
+        val cascade = n * 28f
+        val maxX = (areaW - windowW).coerceAtLeast(0f)
+        val maxY = (areaH - windowH).coerceAtLeast(0f)
         val w = Win(
             next++, kind, title, desk,
-            24f + n * 28, 16f + n * 28,
-            minOf(560f, areaW - 32f), minOf(380f, areaH - 32f),
+            ((areaW - windowW) / 2f + cascade).coerceIn(0f, maxX),
+            ((areaH - windowH) / 2f + cascade).coerceIn(0f, maxY),
+            windowW, windowH,
         )
         wins.add(w)
         focus(w)

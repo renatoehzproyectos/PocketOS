@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.pocketos.app-debug-45:/drawable_ic_launcher.xml.flat",
+        "source": "com.pocketos.app-main-47:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "com.pocketos.app-debug-45:/xml_accessibility_service.xml.flat",
+        "source": "com.pocketos.app-main-47:/xml/accessibility_service.xml"
+    }
+]

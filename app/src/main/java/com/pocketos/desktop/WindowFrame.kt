@@ -21,20 +21,21 @@ import com.pocketos.core.window.Win
 import com.pocketos.core.window.WindowManager
 import com.pocketos.design.Breeze
 import com.pocketos.design.LocalAccent
+import com.pocketos.design.BreezeIcon
 
 @Composable
 fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
     val density = LocalDensity.current.density
     val accent = LocalAccent.current
     val active = wm.focusedId == w.id
-    val shape = RoundedCornerShape(if (w.maximized) 0.dp else 6.dp)
+    val shape = RoundedCornerShape(if (w.maximized) 0.dp else 3.dp)
     val base = if (w.maximized) Modifier.fillMaxSize()
     else Modifier.offset(w.x.dp, w.y.dp).size(w.w.dp, w.h.dp)
 
     Box(
         base.zIndex(w.z.toFloat())
             .clip(shape)
-            .background(Breeze.Bg)
+            .background(Color(0xFF17191B))
             .border(1.dp, if (active) accent else Breeze.Border, shape)
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -44,8 +45,8 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
             }
     ) {
         Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().height(34.dp).background(Breeze.Panel)
+            Box(
+                Modifier.fillMaxWidth().height(34.dp).background(Color(0xFF232629))
                     .pointerInput(w.maximized) {
                         if (!w.maximized) {
                             detectDragGestures { change, drag ->
@@ -54,14 +55,15 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
                                 w.y += drag.y / density
                             }
                         }
-                    }
-                    .padding(start = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    },
+                contentAlignment = Alignment.Center,
             ) {
-                Text(w.title, color = Breeze.Text, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f))
-                CtrlBtn("–") { w.minimized = true }
-                CtrlBtn(if (w.maximized) "❐" else "□") { w.maximized = !w.maximized }
-                CtrlBtn("✕") { wm.close(w) }
+                Text(w.title, color = Breeze.Text, fontSize = 12.sp, maxLines = 1)
+                Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                    CtrlBtn("window-minimize") { w.minimized = true }
+                    CtrlBtn(if (w.maximized) "window-restore" else "window-maximize") { w.maximized = !w.maximized }
+                    CtrlBtn("window-close") { wm.close(w) }
+                }
             }
             Box(Modifier.weight(1f).fillMaxWidth()) { content() }
         }
@@ -82,9 +84,9 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun CtrlBtn(label: String, onClick: () -> Unit) {
+private fun CtrlBtn(icon: String, onClick: () -> Unit) {
     Box(
-        Modifier.size(width = 38.dp, height = 34.dp).clickable(onClick = onClick),
+        Modifier.size(width = 32.dp, height = 34.dp).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
-    ) { Text(label, color = Color.White, fontSize = 14.sp) }
+    ) { BreezeIcon(icon, Modifier.size(16.dp), icon) }
 }

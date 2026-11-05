@@ -1,6 +1,7 @@
 package com.pocketos.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -17,6 +18,7 @@ import com.pocketos.core.storage.*
 import com.pocketos.core.input.Remote
 import com.pocketos.core.window.WindowManager
 import com.pocketos.design.Wallpapers
+import com.pocketos.design.drawPlasmaWallpaper
 import com.pocketos.applications.FileManager
 import com.pocketos.applications.SettingsApp
 import com.pocketos.shell.*
@@ -66,13 +68,13 @@ fun Desktop(prefs: Preferences) {
 
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
         val aw = maxWidth.value
-        val ah = maxHeight.value - 46f
+        val ah = maxHeight.value - 52f
 
         fun openApp(a: AppInfo) {
             menu = false
             when (a.pkg) {
-                "pocketos:files" -> wm.open("files", "📁 Archivos", desk, aw, ah)
-                "pocketos:settings" -> wm.open("settings", "⚙ Ajustes del sistema", desk, aw, ah)
+                "pocketos:files" -> wm.open("files", "Dolphin", desk, aw, ah)
+                "pocketos:settings" -> wm.open("settings", "Global Theme — System Settings", desk, aw, ah)
                 else -> {
                     launchApp(ctx, a.pkg, displayId)
                     scope.launch { ctx.pushRecent(a.pkg) }
@@ -81,14 +83,13 @@ fun Desktop(prefs: Preferences) {
         }
 
         Column(Modifier.fillMaxSize()) {
-            Box(Modifier.weight(1f).fillMaxWidth().background(Brush.linearGradient(wall))) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                if ((prefs[Keys.WALL] ?: 0) == 0) Canvas(Modifier.fillMaxSize()) { drawPlasmaWallpaper(this) }
+                else Box(Modifier.fillMaxSize().background(Brush.linearGradient(wall)))
                 Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { menu = false } })
-                Column(Modifier.padding(12.dp)) {
-                    DesktopIcon("📁", "Archivos") { openApp(Builtins[0]) }
-                    Spacer(Modifier.height(10.dp))
-                    DesktopIcon("⚙", "Ajustes") { openApp(Builtins[1]) }
+                Column(Modifier.padding(start = 34.dp, top = 26.dp)) {
+                    DesktopIcon("📁", "Files") { openApp(Builtins[0]) }
                 }
-                ClockWidget(Modifier.align(Alignment.TopEnd).padding(16.dp))
                 wm.wins.forEach { w ->
                     key(w.id) {
                         if (w.desk == desk && !w.minimized) {
@@ -118,6 +119,12 @@ fun Desktop(prefs: Preferences) {
                 onMenu = { menu = !menu },
                 onWin = { wm.fromTaskbar(it); menu = false },
                 onDesk = { desk = it; menu = false },
+                onFiles = { openApp(Builtins[0]) },
+                onSettings = { openApp(Builtins[1]) },
+                onBrowser = { apps.firstOrNull { it.label.contains("browser", true) || it.label.contains("firefox", true) || it.label.contains("chrome", true) }?.let(::openApp) ?: run { menu = true } },
+                onDiscover = { apps.firstOrNull { it.label.contains("play store", true) || it.label.contains("discover", true) || it.label.contains("app store", true) }?.let(::openApp) ?: run { menu = true } },
+                onTerminal = { apps.firstOrNull { it.label.contains("termux", true) || it.label.contains("terminal", true) }?.let(::openApp) ?: run { menu = true } },
+                apps = apps,
             )
         }
     }
