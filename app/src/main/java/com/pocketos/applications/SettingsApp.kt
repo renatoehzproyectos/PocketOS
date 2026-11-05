@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import com.pocketos.core.storage.Keys
 import com.pocketos.design.Accents
+import com.pocketos.R
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import com.pocketos.design.Breeze
 import com.pocketos.design.BreezeIcon
 import com.pocketos.design.Wallpapers
@@ -28,8 +31,8 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
     val curAccent = prefs[Keys.ACCENT] ?: Accents[0]
     val curWall = prefs[Keys.WALL] ?: 0
 
-    Row(Modifier.fillMaxSize().background(Color(0xFF141618))) {
-        Column(Modifier.width(270.dp).fillMaxHeight().background(Color(0xFF1E2124))) {
+    Row(Modifier.fillMaxSize().background(Color(0xB8141618))) {
+        Column(Modifier.width(270.dp).fillMaxHeight().background(Color(0xB31E2124))) {
             Row(Modifier.fillMaxWidth().height(54.dp).padding(horizontal = 16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text("‹", color = Breeze.Text, fontSize = 25.sp)
                 Text("Colors & Themes", color = Breeze.Text, fontSize = 15.sp, modifier = Modifier.weight(1f).padding(start = 8.dp))
@@ -80,9 +83,12 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
                         Text("Desktop wallpaper", color = Breeze.Text, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp))
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Wallpapers.forEachIndexed { i, colors ->
-                                Box(Modifier.size(110.dp, 64.dp).clip(RoundedCornerShape(5.dp)).background(Brush.linearGradient(colors))
+                                Box(Modifier.size(110.dp, 64.dp).clip(RoundedCornerShape(5.dp))
+                                    .then(if (i == 0) Modifier else Modifier.background(Brush.linearGradient(colors)))
                                     .border(if (i == curWall) 2.dp else 1.dp, if (i == curWall) Color.White else Breeze.Border, RoundedCornerShape(5.dp))
-                                    .clickable { onWall(i) })
+                                    .clickable { onWall(i) }) {
+                                    if (i == 0) Image(painterResource(R.drawable.wallpaper_plasma), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                }
                             }
                         }
                     }
@@ -93,7 +99,7 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
                 }
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x33FCFCFC)))
-            Row(Modifier.fillMaxWidth().height(52.dp).background(Color(0xFF232629)).padding(horizontal = 10.dp),
+            Row(Modifier.fillMaxWidth().height(52.dp).background(Color(0xB3232629)).padding(horizontal = 10.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 BreezeButton("Help", "help") {}
                 Spacer(Modifier.width(6.dp))

@@ -2,6 +2,10 @@ package com.pocketos.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.pocketos.R
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -92,7 +96,10 @@ fun Desktop(prefs: Preferences) {
 
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                if ((prefs[Keys.WALL] ?: 0) == 0) Canvas(Modifier.fillMaxSize()) { drawPlasmaWallpaper(this) }
+                if ((prefs[Keys.WALL] ?: 0) == 0) Image(
+                    painterResource(R.drawable.wallpaper_plasma), null,
+                    Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
+                )
                 else Box(Modifier.fillMaxSize().background(Brush.linearGradient(wall)))
                 Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { menu = false } })
                 Column(Modifier.padding(start = 34.dp, top = 26.dp)) {

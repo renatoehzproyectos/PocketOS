@@ -37,7 +37,7 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
         base.zIndex(w.z.toFloat())
             .then(if (w.maximized) Modifier else Modifier.shadow(if (active) 22.dp else 12.dp, shape, clip = false, ambientColor = Color.Black, spotColor = Color.Black))
             .clip(shape)
-            .background(Color(0xFF1B1E20))
+            .background(Color(0xD91B1E20))
             .border(1.dp, if (active) Color(0x40FFFFFF) else Color(0x22FFFFFF), shape)
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -48,7 +48,7 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(
-                Modifier.fillMaxWidth().height(34.dp).background(if (active) Color(0xFF232629) else Color(0xFF2A2E32))
+                Modifier.fillMaxWidth().height(34.dp).background(if (active) Color(0xD9232629) else Color(0xCC2A2E32))
                     .pointerInput(w.maximized) {
                         if (!w.maximized) {
                             detectDragGestures { change, drag ->

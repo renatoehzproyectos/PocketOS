@@ -134,7 +134,7 @@ fun Taskbar(
     val accent = LocalAccent.current
     val now = rememberNow()
     Row(
-        Modifier.fillMaxWidth().height(52.dp).background(Color(0xE61B1E20)),
+        Modifier.fillMaxWidth().height(52.dp).background(Color(0xB81B1E20)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -219,9 +219,9 @@ fun AppTile(app: AppInfo, fav: Boolean, onOpen: () -> Unit, onFav: () -> Unit) {
 }
 
 private const val UserName = "Senthilkumar Palani"
-private val KSidebar = Color(0xE6292532)
-private val KContent = Color(0xF21B1E20)
-private val KHeader = Color(0xF2232629)
+private val KSidebar = Color(0xB3292532)
+private val KContent = Color(0xC71B1E20)
+private val KHeader = Color(0xCC232629)
 private val KLine = Color(0x33FCFCFC)
 
 @Composable
@@ -335,7 +335,7 @@ fun Kickoff(
             val fieldShape = RoundedCornerShape(4.dp)
             Row(
                 Modifier.weight(1f).widthIn(max = 340.dp).height(30.dp).clip(fieldShape)
-                    .background(Color(0xFF1B1E20)).border(1.dp, Color(0xFF3A3F44), fieldShape).padding(horizontal = 8.dp),
+                    .background(Color(0x991B1E20)).border(1.dp, Color(0x663A3F44), fieldShape).padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 BreezeIcon("kick-search", Modifier.size(16.dp), "Search")
