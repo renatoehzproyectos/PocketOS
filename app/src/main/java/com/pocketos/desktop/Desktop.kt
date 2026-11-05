@@ -137,6 +137,12 @@ fun Desktop(prefs: Preferences) {
                     } else wm.fromTaskbar(w)
                 },
                 onDesk = { desk = it; menu = false },
+                onShowDesktop = {
+                    menu = false
+                    val here = wm.wins.filter { it.desk == desk }
+                    if (here.any { !it.minimized }) here.forEach { it.minimized = true }
+                    else here.forEach { it.minimized = false }
+                },
                 onFiles = { openApp(Builtins[0]) },
                 onSettings = { openApp(Builtins[1]) },
                 onBrowser = { apps.firstOrNull { it.label.contains("browser", true) || it.label.contains("firefox", true) || it.label.contains("chrome", true) }?.let(::openApp) ?: run { menu = true } },

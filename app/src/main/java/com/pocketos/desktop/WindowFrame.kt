@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -28,15 +29,16 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
     val density = LocalDensity.current.density
     val accent = LocalAccent.current
     val active = wm.focusedId == w.id
-    val shape = RoundedCornerShape(if (w.maximized) 0.dp else 3.dp)
+    val shape = if (w.maximized) RoundedCornerShape(0.dp) else RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp, bottomStart = 2.dp, bottomEnd = 2.dp)
     val base = if (w.maximized) Modifier.fillMaxSize()
     else Modifier.offset(w.x.dp, w.y.dp).size(w.w.dp, w.h.dp)
 
     Box(
         base.zIndex(w.z.toFloat())
+            .then(if (w.maximized) Modifier else Modifier.shadow(if (active) 22.dp else 12.dp, shape, clip = false, ambientColor = Color.Black, spotColor = Color.Black))
             .clip(shape)
-            .background(Color(0xFF17191B))
-            .border(1.dp, if (active) accent else Breeze.Border, shape)
+            .background(Color(0xFF1B1E20))
+            .border(1.dp, if (active) Color(0x40FFFFFF) else Color(0x22FFFFFF), shape)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
@@ -46,7 +48,7 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(
-                Modifier.fillMaxWidth().height(34.dp).background(Color(0xFF232629))
+                Modifier.fillMaxWidth().height(34.dp).background(if (active) Color(0xFF232629) else Color(0xFF2A2E32))
                     .pointerInput(w.maximized) {
                         if (!w.maximized) {
                             detectDragGestures { change, drag ->
@@ -58,7 +60,11 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(w.title, color = Breeze.Text, fontSize = 12.sp, maxLines = 1)
+                Text(w.title, color = if (active) Breeze.Text else Breeze.Muted, fontSize = 12.sp, maxLines = 1)
+                BreezeIcon(
+                    when (w.kind) { "files" -> "dolphin"; "settings" -> "settings"; else -> "settings" },
+                    Modifier.align(Alignment.CenterStart).padding(start = 8.dp).size(16.dp), null,
+                )
                 Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
                     CtrlBtn("window-minimize") { w.minimized = true }
                     CtrlBtn(if (w.maximized) "window-restore" else "window-maximize") { w.maximized = !w.maximized }
@@ -78,7 +84,13 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
                         }
                     },
                 contentAlignment = Alignment.BottomEnd,
-            ) { Text("◢", color = Breeze.Muted, fontSize = 14.sp) }
+            ) {
+                androidx.compose.foundation.Canvas(Modifier.padding(4.dp).size(9.dp)) {
+                    val c = Color(0x99BDC3C7)
+                    drawLine(c, androidx.compose.ui.geometry.Offset(size.width, 0f), androidx.compose.ui.geometry.Offset(0f, size.height), 1.dp.toPx())
+                    drawLine(c, androidx.compose.ui.geometry.Offset(size.width, size.height * .5f), androidx.compose.ui.geometry.Offset(size.width * .5f, size.height), 1.dp.toPx())
+                }
+            }
         }
     }
 }

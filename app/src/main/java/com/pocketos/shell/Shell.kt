@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
@@ -121,24 +122,25 @@ private fun PanelGlyph(kind: Int, modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Taskbar(
     wins: List<Win>, desk: Int, focusedId: Int,
     onMenu: () -> Unit, onWin: (Win) -> Unit, onDesk: (Int) -> Unit,
     onFiles: () -> Unit = {}, onSettings: () -> Unit = {}, onBrowser: () -> Unit = {},
     onDiscover: () -> Unit = {}, onTerminal: () -> Unit = {}, apps: List<AppInfo> = emptyList(),
+    onShowDesktop: () -> Unit = {},
 ) {
     val accent = LocalAccent.current
     val now = rememberNow()
     Row(
-        Modifier.fillMaxWidth().height(52.dp).background(Color(0xF21B1E20)).border(1.dp, Color(0x334D4D4D)),
+        Modifier.fillMaxWidth().height(52.dp).background(Color(0xE61B1E20)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.padding(start = 9.dp, end = 5.dp).size(40.dp).clip(CircleShape)
-                .background(Color(0xFF202428)).border(1.dp, accent.copy(alpha = .72f), RoundedCornerShape(50)).clickable(onClick = onMenu),
+            Modifier.padding(start = 6.dp, end = 4.dp).size(44.dp).clip(RoundedCornerShape(4.dp)).clickable(onClick = onMenu),
             contentAlignment = Alignment.Center,
-        ) { BreezeIcon("launcher-kde", Modifier.size(32.dp), "KDE applications") }
+        ) { BreezeIcon("launcher-kde", Modifier.size(36.dp), "Application Launcher") }
         listOf("settings", "discover", "dolphin", "firefox", "terminal").forEachIndexed { i, icon ->
             Box(Modifier.padding(horizontal = 2.dp).size(38.dp, 44.dp).clip(RoundedCornerShape(4.dp))
                 .clickable { when (i) { 0 -> onSettings(); 1 -> onDiscover(); 2 -> onFiles(); 3 -> onBrowser(); else -> onTerminal() } }, contentAlignment = Alignment.Center) {
@@ -154,34 +156,40 @@ fun Taskbar(
         Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()).widthIn(min = 1.dp)) {
             wins.filter { it.desk == desk }.forEach { w ->
                 val active = w.id == focusedId && !w.minimized
+                val tShape = RoundedCornerShape(4.dp)
                 Box(
-                    Modifier.padding(horizontal = 3.dp).height(36.dp).widthIn(min = 100.dp, max = 160.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(if (active) Color(0xFF30363A) else Color.Transparent)
-                        .then(if (active) Modifier.border(1.dp, accent.copy(alpha = .55f), RoundedCornerShape(4.dp)) else Modifier)
-                        .clickable { onWin(w) }.padding(horizontal = 10.dp),
+                    Modifier.padding(horizontal = 2.dp).height(44.dp).widthIn(min = 120.dp, max = 180.dp)
+                        .clip(tShape)
+                        .background(if (active) accent.copy(alpha = .22f) else Color(0x14FCFCFC))
+                        .then(if (active) Modifier.border(1.dp, accent, tShape) else Modifier)
+                        .clickable { onWin(w) }.padding(horizontal = 8.dp),
                     contentAlignment = Alignment.CenterStart,
-                ) { Text(w.title, color = Breeze.Text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            }
-        }
-        Row(Modifier.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            (0..3).forEach { i ->
-                Box(Modifier.padding(horizontal = 3.dp).size(8.dp).clip(CircleShape)
-                    .background(if (i == desk) Color(0xFF3DAEE9) else Color(0xFF64686B))
-                    .clickable { onDesk(i) })
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BreezeIcon(
+                            when (w.kind) { "files" -> "dolphin"; "settings" -> "settings"; else -> "terminal" },
+                            Modifier.size(22.dp), null,
+                        )
+                        Spacer(Modifier.width(7.dp))
+                        Text(w.title, color = Breeze.Text, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth(if (active) 1f else .35f).height(2.dp)
+                        .background(if (active) accent else Color(0x80FCFCFC)))
+                }
             }
         }
         Spacer(Modifier.weight(1f))
         Row(Modifier.padding(start = 8.dp, end = 9.dp), verticalAlignment = Alignment.CenterVertically) {
             listOf("notifications", "clipboard", "volume-muted", "brightness", "display", "arrow-up").forEach { icon ->
-                BreezeIcon(icon, Modifier.padding(horizontal = 1.dp).size(18.dp), icon)
+                BreezeIcon(icon, Modifier.padding(horizontal = 3.dp).size(18.dp), icon)
             }
             Column(Modifier.padding(start = 8.dp), horizontalAlignment = Alignment.End) {
-                Text(now.format(DateTimeFormatter.ofPattern("h:mm a")), color = Breeze.Text, fontSize = 12.sp)
-                Text(now.format(DateTimeFormatter.ofPattern("dd/MM/yy")), color = Breeze.Muted, fontSize = 9.sp)
+                Text(now.format(DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.US)), color = Breeze.Text, fontSize = 14.sp, lineHeight = 15.sp)
+                Text(now.format(DateTimeFormatter.ofPattern("dd/MM/yy")), color = Breeze.Text, fontSize = 11.sp, lineHeight = 12.sp)
             }
-            Box(Modifier.padding(start = 10.dp).size(width = 18.dp, height = 28.dp).clickable { }, contentAlignment = Alignment.Center) {
-                Canvas(Modifier.size(13.dp)) { drawRect(Breeze.Muted, style = Stroke(1.dp.toPx())) }
+            Box(Modifier.padding(start = 10.dp).size(width = 18.dp, height = 28.dp)
+                .combinedClickable(onClick = onShowDesktop, onLongClick = { onDesk((desk + 1) % 4) }), contentAlignment = Alignment.Center) {
+                Canvas(Modifier.size(13.dp)) { drawRect(Color(0xFFFCFCFC), style = Stroke(1.2.dp.toPx())) }
             }
         }
     }
@@ -310,7 +318,8 @@ fun Kickoff(
     }
     val shape = RoundedCornerShape(6.dp)
     Column(
-        modifier.widthIn(max = 655.dp).fillMaxWidth().height(516.dp).clip(shape)
+        modifier.widthIn(max = 655.dp).fillMaxWidth().height(516.dp)
+            .shadow(18.dp, shape, clip = false, ambientColor = Color.Black, spotColor = Color.Black).clip(shape)
             .background(KContent).border(1.dp, Color(0xFF45484C), shape)
             .pointerInput(Unit) { detectTapGestures { } },
     ) {

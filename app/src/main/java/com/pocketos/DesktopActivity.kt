@@ -33,12 +33,11 @@ class DesktopActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         secondary = (display?.displayId ?: Display.DEFAULT_DISPLAY) != Display.DEFAULT_DISPLAY
-        if (secondary) {
-            val c = WindowInsetsControllerCompat(window, window.decorView)
-            c.hide(WindowInsetsCompat.Type.systemBars())
-            c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            Pointer.attach(window.decorView, display?.displayId ?: 0)
-        }
+        // Immersive on every display: hides the Android status/gesture bars so only the Plasma shell shows.
+        val c = WindowInsetsControllerCompat(window, window.decorView)
+        c.hide(WindowInsetsCompat.Type.systemBars())
+        c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (secondary) Pointer.attach(window.decorView, display?.displayId ?: 0)
         setContent {
             val prefs by store.data.collectAsState(initial = emptyPreferences())
             val systemDensity = LocalDensity.current
