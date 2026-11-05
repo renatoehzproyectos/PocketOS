@@ -14,6 +14,7 @@ data class AppInfo(
     val pkg: String,
     val icon: ImageBitmap? = null,
     val glyph: String = "",
+    val breeze: String = "",
 )
 
 val Builtins = listOf(

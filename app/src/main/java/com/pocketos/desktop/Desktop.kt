@@ -75,7 +75,7 @@ fun Desktop(prefs: Preferences) {
             when (a.pkg) {
                 "pocketos:files" -> wm.open("files", "Dolphin", desk, aw, ah)
                 "pocketos:settings" -> wm.open("settings", "Global Theme — System Settings", desk, aw, ah)
-                else -> {
+                else -> if (!a.pkg.startsWith("pocketos:")) {
                     val w = wm.open("app:${a.pkg}", a.label, desk, aw, ah, a.pkg)
                     val top = 0  // desktop area starts below system bars padding
                     launchApp(ctx, a.pkg, displayId, android.graphics.Rect(
@@ -114,7 +114,7 @@ fun Desktop(prefs: Preferences) {
                     Kickoff(
                         apps, favs, recents, { a -> openApp(a) },
                         { a -> scope.launch { ctx.toggleFav(a.pkg) } },
-                        Modifier.align(Alignment.BottomStart).padding(6.dp),
+                        Modifier.align(Alignment.BottomStart).padding(start = 8.dp, bottom = 8.dp),
                     )
                 }
             }

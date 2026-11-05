@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -206,6 +210,64 @@ fun AppTile(app: AppInfo, fav: Boolean, onOpen: () -> Unit, onFav: () -> Unit) {
     }
 }
 
+private const val UserName = "Senthilkumar Palani"
+private val KSidebar = Color(0xE6292532)
+private val KContent = Color(0xF21B1E20)
+private val KHeader = Color(0xF2232629)
+private val KLine = Color(0x33FCFCFC)
+
+@Composable
+private fun KItemBg(selected: Boolean, hovered: Boolean, accent: Color, shape: RoundedCornerShape): Modifier =
+    if (selected || hovered)
+        Modifier.background(accent.copy(alpha = if (selected) .28f else .22f), shape).border(1.dp, accent.copy(alpha = .85f), shape)
+    else Modifier
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun KickoffTile(app: AppInfo, accent: Color, onOpen: () -> Unit, onFav: () -> Unit) {
+    val src = remember { MutableInteractionSource() }
+    val hovered by src.collectIsHoveredAsState()
+    val shape = RoundedCornerShape(4.dp)
+    Column(
+        Modifier.size(103.dp, 101.dp).then(KItemBg(false, hovered, accent, shape)).clip(shape)
+            .hoverable(src).combinedClickable(onClick = onOpen, onLongClick = onFav).padding(top = 8.dp, start = 4.dp, end = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { KAppIcon(app, 48) }
+        Spacer(Modifier.height(6.dp))
+        Text(app.label, color = Breeze.Text, fontSize = 13.sp, maxLines = 2, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis, lineHeight = 16.sp)
+    }
+}
+
+@Composable
+private fun KAppIcon(app: AppInfo, size: Int) {
+    if (app.icon != null) Image(app.icon, null, Modifier.size(size.dp))
+    else when {
+        app.pkg == "pocketos:files" -> BreezeIcon("dolphin", Modifier.size(size.dp), app.label)
+        app.pkg == "pocketos:settings" -> BreezeIcon("settings", Modifier.size(size.dp), app.label)
+        app.breeze.isNotEmpty() -> BreezeIcon(app.breeze, Modifier.size(size.dp), app.label)
+        app.pkg == "pocketos:none:firefox" -> PanelGlyph(4, Modifier.size(size.dp))
+        else -> Text(app.glyph, fontSize = (size * .7f).sp)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun KickoffRow(app: AppInfo, accent: Color, onOpen: () -> Unit, onFav: () -> Unit) {
+    val src = remember { MutableInteractionSource() }
+    val hovered by src.collectIsHoveredAsState()
+    val shape = RoundedCornerShape(4.dp)
+    Row(
+        Modifier.fillMaxWidth().height(38.dp).then(KItemBg(false, hovered, accent, shape)).clip(shape)
+            .hoverable(src).combinedClickable(onClick = onOpen, onLongClick = onFav).padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) { KAppIcon(app, 28) }
+        Spacer(Modifier.width(10.dp))
+        Text(app.label, color = Breeze.Text, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 @Composable
 fun Kickoff(
     apps: List<AppInfo>, favs: List<String>, recents: List<String>,
@@ -216,92 +278,140 @@ fun Kickoff(
     val all = Builtins + apps
     var category by remember { mutableIntStateOf(0) }
     val categories = listOf("Favorites", "All Applications", "Development", "Graphics", "Help", "Internet", "Multimedia", "Office", "System", "Utilities")
+    val catIcons = listOf("kick-bookmark", "category-all", "category-development", "category-graphics", "help", "category-internet", "category-multimedia", "category-office", "category-system", "category-utilities")
+
+    fun find(vararg keys: String) = apps.firstOrNull { a -> keys.any { a.label.contains(it, true) } }
+    // Same six favorites, same order, as the Plasma 6.4 Kickoff reference.
+    val reference = listOf(
+        find("firefox", "browser", "chrome") ?: AppInfo("Firefox", "pocketos:none:firefox"),
+        Builtins[1],
+        Builtins[0],
+        find("kwrite", "text editor", "notes") ?: AppInfo("KWrite", "pocketos:none:kwrite", breeze = "kwrite"),
+        find("termux", "terminal") ?: AppInfo("Konsole", "pocketos:none:konsole", breeze = "terminal"),
+        find("play store", "discover", "app store") ?: AppInfo("Discover", "pocketos:none:discover", breeze = "discover"),
+    )
+    val searching = q.isNotBlank()
     val selected = when {
-        q.isNotBlank() -> all.filter { it.label.contains(q, true) }
-        category == 0 -> {
-            val recommended = Builtins + all.filter { app ->
-                app.label.contains("firefox", true) || app.label.contains("browser", true) ||
-                    app.label.contains("chrome", true) || app.label.contains("terminal", true) ||
-                    app.label.contains("termux", true) || app.label.contains("text editor", true) ||
-                    app.label.contains("kwrite", true) || app.label.contains("play store", true) ||
-                    app.label.contains("app store", true) || app.label.contains("discover", true)
-            }
-            (recommended + favs.mapNotNull { p -> all.find { it.pkg == p } }).distinctBy { it.pkg }
-        }
+        searching -> all.filter { it.label.contains(q, true) }
+        category == 0 -> (reference + favs.mapNotNull { p -> all.find { it.pkg == p } }).distinctBy { it.pkg }
         category == 1 -> all
         else -> all.filter { app ->
             when (category) {
-                2 -> app.label.contains("dev", true) || app.label.contains("code", true) || app.label.contains("terminal", true)
-                3 -> app.label.contains("photo", true) || app.label.contains("camera", true) || app.label.contains("image", true)
+                2 -> app.label.contains("dev", true) || app.label.contains("code", true) || app.label.contains("terminal", true) || app.label.contains("termux", true)
+                3 -> app.label.contains("photo", true) || app.label.contains("camera", true) || app.label.contains("image", true) || app.label.contains("gallery", true)
                 4 -> app.label.contains("help", true)
                 5 -> app.label.contains("browser", true) || app.label.contains("chrome", true) || app.label.contains("firefox", true)
-                6 -> app.label.contains("music", true) || app.label.contains("video", true)
-                7 -> app.label.contains("office", true) || app.label.contains("docs", true)
-                8 -> app.label.contains("settings", true) || app.label.contains("ajustes", true)
-                else -> app.label.contains("file", true) || app.label.contains("archiv", true)
+                6 -> app.label.contains("music", true) || app.label.contains("video", true) || app.label.contains("player", true)
+                7 -> app.label.contains("office", true) || app.label.contains("docs", true) || app.label.contains("sheets", true)
+                8 -> app.label.contains("settings", true) || app.label.contains("ajustes", true) || app.label.contains("clock", true)
+                else -> app.label.contains("file", true) || app.label.contains("archiv", true) || app.label.contains("calc", true)
             }
         }
     }
-    val shape = RoundedCornerShape(topEnd = 7.dp, topStart = 7.dp)
+    val shape = RoundedCornerShape(6.dp)
     Column(
-        modifier.widthIn(max = 660.dp).fillMaxWidth().heightIn(max = 520.dp).height(520.dp).clip(shape)
-            .background(Color(0xF21F2226)).border(1.dp, Color(0xFF45484C), shape)
-            .pointerInput(Unit) { detectTapGestures { } }
-            .padding(6.dp),
+        modifier.widthIn(max = 655.dp).fillMaxWidth().height(516.dp).clip(shape)
+            .background(KContent).border(1.dp, Color(0xFF45484C), shape)
+            .pointerInput(Unit) { detectTapGestures { } },
     ) {
-        Row(Modifier.height(40.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.padding(start = 2.dp).size(28.dp).clip(CircleShape).background(Color(0xFF26292D)).border(1.dp, accent, CircleShape), contentAlignment = Alignment.Center) {
-                Text("SP", color = accent, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        // Header: avatar + user name, search field, configure + pin buttons
+        Row(Modifier.fillMaxWidth().height(46.dp).background(KHeader), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.width(239.dp).padding(start = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(28.dp).clip(CircleShape).border(1.dp, Color(0xFF8BC34A), CircleShape), contentAlignment = Alignment.Center) {
+                    Text("SP", color = Color(0xFF8BC34A), fontSize = 9.sp)
+                }
+                Spacer(Modifier.width(5.dp))
+                Text(UserName, color = Breeze.Text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            BasicTextField(
-                value = q, onValueChange = { q = it }, singleLine = true,
-                textStyle = TextStyle(color = Breeze.Text, fontSize = 13.sp),
-                cursorBrush = SolidColor(accent),
-                modifier = Modifier.weight(1f).padding(start = 8.dp, end = 45.dp).height(30.dp)
-                    .clip(RoundedCornerShape(4.dp)).background(Color(0xFF151719)).border(1.dp, Color(0xFF43474A), RoundedCornerShape(4.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
-                decorationBox = { inner ->
-                if (q.isEmpty()) Text("⌕  Search…", color = Breeze.Muted, fontSize = 13.sp)
-                    inner()
-                },
-            )
-        }
-        Row(Modifier.weight(1f).fillMaxWidth()) {
-            Column(Modifier.width(234.dp).fillMaxHeight().background(Color(0xDD292532)).padding(vertical = 5.dp)) {
-                categories.forEachIndexed { i, t ->
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 1.dp).height(34.dp)
-                        .clip(RoundedCornerShape(4.dp)).background(if (i == category) Color(0xFF17485C) else Color.Transparent)
-                        .clickable { category = i; q = "" }.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        val categoryIcon = when (i) {
-                            0 -> "favorites"
-                            1 -> "category-all"
-                            2 -> "category-development"
-                            3 -> "category-graphics"
-                            4 -> "help"
-                            5 -> "category-internet"
-                            6 -> "category-multimedia"
-                            7 -> "category-office"
-                            8 -> "category-system"
-                            else -> "category-utilities"
+            val fieldShape = RoundedCornerShape(4.dp)
+            Row(
+                Modifier.weight(1f).widthIn(max = 340.dp).height(30.dp).clip(fieldShape)
+                    .background(Color(0xFF1B1E20)).border(1.dp, Color(0xFF3A3F44), fieldShape).padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BreezeIcon("kick-search", Modifier.size(16.dp), "Search")
+                Spacer(Modifier.width(6.dp))
+                BasicTextField(
+                    value = q, onValueChange = { q = it }, singleLine = true,
+                    textStyle = TextStyle(color = Breeze.Text, fontSize = 13.sp),
+                    cursorBrush = SolidColor(accent),
+                    modifier = Modifier.weight(1f),
+                    decorationBox = { inner ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (q.isEmpty()) Text("Search…", color = Breeze.Muted, fontSize = 13.sp)
+                            inner()
                         }
-                        BreezeIcon(categoryIcon, Modifier.width(24.dp).height(22.dp), t)
-                        Text(t, color = if (i == category) Color.White else Breeze.Text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    },
+                )
+            }
+            Spacer(Modifier.weight(.001f))
+            BreezeIcon("kick-configure", Modifier.padding(start = 12.dp).size(22.dp), "Configure")
+            BreezeIcon("kick-pin", Modifier.padding(start = 12.dp, end = 12.dp).size(22.dp), "Keep open")
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(KLine))
+        Row(Modifier.weight(1f).fillMaxWidth()) {
+            // Sidebar
+            Column(Modifier.width(235.dp).fillMaxHeight().background(KSidebar).padding(horizontal = 4.dp, vertical = 6.dp)) {
+                categories.forEachIndexed { i, t ->
+                    if (i == 2) Box(Modifier.padding(vertical = 5.dp, horizontal = 4.dp).fillMaxWidth().height(1.dp).background(KLine))
+                    val src = remember { MutableInteractionSource() }
+                    val hovered by src.collectIsHoveredAsState()
+                    val sh = RoundedCornerShape(4.dp)
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 1.dp).height(33.dp)
+                            .then(KItemBg(i == category && !searching, hovered, accent, sh)).clip(sh)
+                            .hoverable(src).clickable { category = i; q = "" }.padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        BreezeIcon(catIcons[i], Modifier.size(22.dp), t)
+                        Spacer(Modifier.width(12.dp))
+                        Text(t, color = Breeze.Text, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                        if (i == 8) Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF27AE60)))
                     }
-                    if (i == 1 || i == 4 || i == 7) Spacer(Modifier.height(3.dp))
                 }
             }
-            Column(Modifier.weight(1f).fillMaxHeight().padding(start = 8.dp, end = 4.dp, top = 4.dp)) {
-                LazyVerticalGrid(GridCells.Adaptive(82.dp), Modifier.weight(1f)) {
-                    items(selected) { a -> AppTile(a, a.pkg in favs, { onOpen(a) }, { onFav(a) }) }
+            Box(Modifier.width(1.dp).fillMaxHeight().background(KLine))
+            // Content
+            Box(Modifier.weight(1f).fillMaxHeight()) {
+                if (category == 0 && !searching) {
+                    LazyVerticalGrid(
+                        GridCells.Fixed(4), Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 4.dp, top = 6.dp, end = 4.dp),
+                    ) {
+                        items(selected) { a -> KickoffTile(a, accent, { onOpen(a) }, { onFav(a) }) }
+                    }
+                } else {
+                    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)) {
+                        items(selected) { a -> KickoffRow(a, accent, { onOpen(a) }, { onFav(a) }) }
+                    }
                 }
             }
         }
-        Row(Modifier.fillMaxWidth().height(40.dp).background(Color(0xFF202327)).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("⊞  Applications", color = Breeze.Text, fontSize = 12.sp, modifier = Modifier.clickable { category = 1 }.padding(horizontal = 4.dp))
-            Text("◉  Places", color = Breeze.Muted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 8.dp))
-            Spacer(Modifier.weight(1f))
-            listOf("☾  Sleep", "⟳  Restart", "⏻  Shut Down", "‹  Session").forEach { action ->
-                Text(action, color = Breeze.Text, fontSize = 10.sp, modifier = Modifier.clickable { }.padding(horizontal = 5.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(KLine))
+        // Footer: Applications / Places tabs and power actions
+        Row(Modifier.fillMaxWidth().height(46.dp).background(KHeader), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.padding(start = 7.dp).width(114.dp).fillMaxHeight().clickable { category = 1; q = "" }) {
+                Box(Modifier.align(Alignment.TopStart).padding(horizontal = 6.dp).fillMaxWidth().height(3.dp).background(accent))
+                Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically) {
+                    BreezeIcon("kick-apps", Modifier.size(18.dp), "Applications")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Applications", color = Breeze.Text, fontSize = 13.sp)
+                }
             }
+            Row(Modifier.padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                BreezeIcon("kick-places", Modifier.size(18.dp), "Places")
+                Spacer(Modifier.width(8.dp))
+                Text("Places", color = Breeze.Text, fontSize = 13.sp)
+            }
+            Spacer(Modifier.weight(1f))
+            listOf("kick-sleep" to "Sleep", "kick-restart" to "Restart", "kick-shutdown" to "Shut Down", "kick-session" to "Session").forEach { (ic, label) ->
+                Row(Modifier.clip(RoundedCornerShape(4.dp)).clickable { }.padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BreezeIcon(ic, Modifier.size(16.dp), label)
+                    Spacer(Modifier.width(5.dp))
+                    Text(label, color = Breeze.Text, fontSize = 13.sp, maxLines = 1)
+                }
+            }
+            Spacer(Modifier.width(4.dp))
         }
     }
 }

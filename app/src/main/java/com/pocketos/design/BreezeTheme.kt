@@ -1,6 +1,12 @@
 package com.pocketos.design
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import com.pocketos.R
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -80,6 +86,12 @@ fun PocketTheme(accent: Color, content: @Composable () -> Unit) {
         surfaceVariant = Breeze.Surface, onSurfaceVariant = Breeze.Muted,
     )
     CompositionLocalProvider(LocalAccent provides accent) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        val noto = FontFamily(
+            Font(R.font.noto_sans_regular, FontWeight.Normal),
+            Font(R.font.noto_sans_bold, FontWeight.Bold),
+        )
+        MaterialTheme(colorScheme = scheme) {
+            ProvideTextStyle(TextStyle(fontFamily = noto), content)
+        }
     }
 }
