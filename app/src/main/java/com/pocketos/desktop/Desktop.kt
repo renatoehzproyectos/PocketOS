@@ -76,7 +76,11 @@ fun Desktop(prefs: Preferences) {
                 "pocketos:files" -> wm.open("files", "Dolphin", desk, aw, ah)
                 "pocketos:settings" -> wm.open("settings", "Global Theme — System Settings", desk, aw, ah)
                 else -> {
-                    launchApp(ctx, a.pkg, displayId)
+                    val w = wm.open("app:${a.pkg}", a.label, desk, aw, ah, a.pkg)
+                    val top = 0  // desktop area starts below system bars padding
+                    launchApp(ctx, a.pkg, displayId, android.graphics.Rect(
+                        w.x.toInt(), w.y.toInt() + top,
+                        (w.x + w.w).toInt(), (w.y + w.h).toInt() + top))
                     scope.launch { ctx.pushRecent(a.pkg) }
                 }
             }
@@ -92,7 +96,7 @@ fun Desktop(prefs: Preferences) {
                 }
                 wm.wins.forEach { w ->
                     key(w.id) {
-                        if (w.desk == desk && !w.minimized) {
+                        if (w.desk == desk && !w.minimized && w.pkg.isEmpty()) {
                             WindowFrame(w, wm) {
                                 when (w.kind) {
                                     "files" -> FileManager()
@@ -117,7 +121,18 @@ fun Desktop(prefs: Preferences) {
             Taskbar(
                 wm.wins, desk, wm.focusedId,
                 onMenu = { menu = !menu },
-                onWin = { wm.fromTaskbar(it); menu = false },
+                onWin = { w ->
+                    menu = false
+                    if (w.pkg.isNotEmpty()) {
+                        // Real Android app: can't be minimized from here. Focused -> remove entry; else bring back.
+                        if (wm.focusedId == w.id) wm.close(w)
+                        else {
+                            wm.focus(w)
+                            launchApp(ctx, w.pkg, displayId, android.graphics.Rect(
+                                w.x.toInt(), w.y.toInt(), (w.x + w.w).toInt(), (w.y + w.h).toInt()))
+                        }
+                    } else wm.fromTaskbar(w)
+                },
                 onDesk = { desk = it; menu = false },
                 onFiles = { openApp(Builtins[0]) },
                 onSettings = { openApp(Builtins[1]) },
