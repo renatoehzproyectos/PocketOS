@@ -54,7 +54,7 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
         }
         Column(Modifier.weight(1f).fillMaxHeight()) {
             Row(Modifier.fillMaxWidth().height(54.dp).padding(start = 18.dp, end = 14.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text(if (cat == 0) "Global Theme" else cats[cat], color = Breeze.Text, fontSize = 19.sp, modifier = Modifier.weight(1f))
+                Text(if (cat == 0) "Global Theme" else cats[cat], color = Breeze.Text, fontSize = 19.sp, maxLines = 1, softWrap = false, modifier = Modifier.weight(1f))
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     BreezeIcon("get-new", Modifier.size(16.dp), "Get New")
                     Text("Get New…", color = Breeze.Text, fontSize = 12.sp)

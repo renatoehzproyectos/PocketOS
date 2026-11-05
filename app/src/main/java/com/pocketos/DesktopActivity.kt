@@ -42,7 +42,11 @@ class DesktopActivity : ComponentActivity() {
         setContent {
             val prefs by store.data.collectAsState(initial = emptyPreferences())
             val systemDensity = LocalDensity.current
-            val shellDensity = if (secondary) Density(1f, 1f) else systemDensity
+            // Lay the shell out like the 1920px-wide Plasma reference on every display,
+            // so sizes (655x516 menu, 52 px panel, 930 px windows) keep the same proportions.
+            val dm = resources.displayMetrics
+            val scale = (maxOf(dm.widthPixels, dm.heightPixels) / 1920f).coerceIn(0.5f, 4f)
+            val shellDensity = Density(scale, 1f)
             PocketTheme(Color(prefs[Keys.ACCENT] ?: Accents[0])) {
                 CompositionLocalProvider(LocalDensity provides shellDensity) {
                     Box(Modifier.fillMaxSize().onSizeChanged {

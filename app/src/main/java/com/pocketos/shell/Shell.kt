@@ -395,13 +395,13 @@ fun Kickoff(
                 Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically) {
                     BreezeIcon("kick-apps", Modifier.size(18.dp), "Applications")
                     Spacer(Modifier.width(8.dp))
-                    Text("Applications", color = Breeze.Text, fontSize = 13.sp)
+                    Text("Applications", color = Breeze.Text, fontSize = 13.sp, maxLines = 1, softWrap = false)
                 }
             }
             Row(Modifier.padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 BreezeIcon("kick-places", Modifier.size(18.dp), "Places")
                 Spacer(Modifier.width(8.dp))
-                Text("Places", color = Breeze.Text, fontSize = 13.sp)
+                Text("Places", color = Breeze.Text, fontSize = 13.sp, maxLines = 1, softWrap = false)
             }
             Spacer(Modifier.weight(1f))
             listOf("kick-sleep" to "Sleep", "kick-restart" to "Restart", "kick-shutdown" to "Shut Down", "kick-session" to "Session").forEach { (ic, label) ->

@@ -11,6 +11,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.zIndex
+import com.pocketos.core.window.Win
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
 import com.pocketos.core.applications.*
@@ -29,6 +32,9 @@ import kotlinx.coroutines.withContext
 @Composable
 fun Desktop(prefs: Preferences) {
     val ctx = LocalContext.current
+    val dens = LocalDensity.current.density
+    fun boundsOf(w: Win) = android.graphics.Rect(
+        (w.x * dens).toInt(), (w.y * dens).toInt(), ((w.x + w.w) * dens).toInt(), ((w.y + w.h) * dens).toInt())
     val scope = rememberCoroutineScope()
     val wm = remember { WindowManager() }
     var desk by remember { mutableIntStateOf(0) }
@@ -78,9 +84,7 @@ fun Desktop(prefs: Preferences) {
                 else -> if (!a.pkg.startsWith("pocketos:")) {
                     val w = wm.open("app:${a.pkg}", a.label, desk, aw, ah, a.pkg)
                     val top = 0  // desktop area starts below system bars padding
-                    launchApp(ctx, a.pkg, displayId, android.graphics.Rect(
-                        w.x.toInt(), w.y.toInt() + top,
-                        (w.x + w.w).toInt(), (w.y + w.h).toInt() + top))
+                    launchApp(ctx, a.pkg, displayId, boundsOf(w))
                     scope.launch { ctx.pushRecent(a.pkg) }
                 }
             }
@@ -114,7 +118,7 @@ fun Desktop(prefs: Preferences) {
                     Kickoff(
                         apps, favs, recents, { a -> openApp(a) },
                         { a -> scope.launch { ctx.toggleFav(a.pkg) } },
-                        Modifier.align(Alignment.BottomStart).padding(start = 8.dp, bottom = 8.dp),
+                        Modifier.align(Alignment.BottomStart).padding(start = 8.dp, bottom = 8.dp).zIndex(100000f),
                     )
                 }
             }
@@ -128,8 +132,7 @@ fun Desktop(prefs: Preferences) {
                         if (wm.focusedId == w.id) wm.close(w)
                         else {
                             wm.focus(w)
-                            launchApp(ctx, w.pkg, displayId, android.graphics.Rect(
-                                w.x.toInt(), w.y.toInt(), (w.x + w.w).toInt(), (w.y + w.h).toInt()))
+                            launchApp(ctx, w.pkg, displayId, boundsOf(w))
                         }
                     } else wm.fromTaskbar(w)
                 },
