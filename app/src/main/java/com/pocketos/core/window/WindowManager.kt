@@ -1,11 +1,13 @@
 package com.pocketos.core.window
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.ImageBitmap
 
 class Win(
     val id: Int, val kind: String, val title: String, val desk: Int,
     x0: Float, y0: Float, w0: Float, h0: Float,
     val pkg: String = "",
+    val icon: ImageBitmap? = null,
 ) {
     var x by mutableFloatStateOf(x0)
     var y by mutableFloatStateOf(y0)
@@ -22,7 +24,7 @@ class WindowManager {
     private var next = 1
     private var zc = 0
 
-    fun open(kind: String, title: String, desk: Int, areaW: Float, areaH: Float, pkg: String = ""): Win {
+    fun open(kind: String, title: String, desk: Int, areaW: Float, areaH: Float, pkg: String = "", icon: ImageBitmap? = null): Win {
         wins.find { it.kind == kind && it.desk == desk }?.let { focus(it); return it }
         val n = wins.count { it.desk == desk }
         val windowW = minOf(930f, areaW * .485f).coerceAtLeast(280f).coerceAtMost(areaW)
@@ -34,7 +36,7 @@ class WindowManager {
             next++, kind, title, desk,
             ((areaW - windowW) / 2f + cascade).coerceIn(0f, maxX),
             ((areaH - windowH) / 2f + cascade).coerceIn(0f, maxY),
-            windowW, windowH, pkg,
+            windowW, windowH, pkg, icon,
         )
         wins.add(w)
         focus(w)

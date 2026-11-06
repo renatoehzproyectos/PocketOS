@@ -69,6 +69,10 @@ fun TouchpadScreen(
                         text = { Text(if (a11yOn) "Accesibilidad: activa ✓" else "Activar accesibilidad (apps de terceros)") },
                         onClick = { menu = false; onOpenA11y() },
                     )
+                    DropdownMenuItem(
+                        text = { Text(if (com.pocketos.vd.VdHost.ready) "Shizuku: conectado ✓" else "Shizuku: conectar") },
+                        onClick = { menu = false; com.pocketos.vd.VdHost.requestPermission() },
+                    )
                     DropdownMenuItem(text = { Text("Diagnóstico") }, onClick = { menu = false; diag = true })
                 }
             }

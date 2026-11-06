@@ -19,6 +19,7 @@ import com.pocketos.R
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.pocketos.design.Breeze
+import com.pocketos.vd.VdHost
 import com.pocketos.design.BreezeIcon
 import com.pocketos.design.Wallpapers
 
@@ -94,7 +95,12 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
                     }
                     2 -> Text("Application style\n\nBreeze  ·  Fusion", color = Breeze.Text, fontSize = 14.sp)
                     3 -> Text("Plasma style\n\nBreeze", color = Breeze.Text, fontSize = 14.sp)
-                    4 -> Text("Window decorations\n\nBreeze", color = Breeze.Text, fontSize = 14.sp)
+                    4 -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Hosted app windows (Shizuku)", color = Breeze.Text, fontSize = 14.sp)
+                        Text(VdHost.status, color = if (VdHost.ready) Color(0xFF27AE60) else Breeze.Muted, fontSize = 12.sp)
+                        BreezeButton(if (VdHost.ready) "Connected" else "Connect", "defaults") { VdHost.requestPermission() }
+                        Text("Needs Shizuku running and Android 13+. See VIRTUAL_DISPLAY_SETUP.md.", color = Breeze.Muted, fontSize = 11.sp)
+                    }
                     else -> Text("Icons\n\nBreeze", color = Breeze.Text, fontSize = 14.sp)
                 }
             }

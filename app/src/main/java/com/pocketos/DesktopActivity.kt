@@ -25,12 +25,15 @@ import com.pocketos.desktop.CursorOverlay
 import com.pocketos.desktop.Desktop
 import com.pocketos.design.Accents
 import com.pocketos.design.PocketTheme
+import com.pocketos.vd.VdHost
+import android.view.KeyEvent
 
 class DesktopActivity : ComponentActivity() {
     private var secondary = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        VdHost.init(applicationContext)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         secondary = (display?.displayId ?: Display.DEFAULT_DISPLAY) != Display.DEFAULT_DISPLAY
         // Immersive on every display: hides the Android status/gesture bars so only the Plasma shell shows.
@@ -58,6 +61,9 @@ class DesktopActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        VdHost.forwardKey(event) || super.dispatchKeyEvent(event)
 
     override fun onResume() {
         super.onResume()

@@ -19,7 +19,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; aidl = true }
 }
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.09.00"))
@@ -30,4 +30,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("com.caverock:androidsvg-aar:1.4")
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
 }

@@ -41,6 +41,7 @@ fun buildReport(ctx: Context): String {
     sb.appendLine("Escritorio al frente: ${Pointer.desktopFocused}")
     sb.appendLine("Accesibilidad: ${PocketAccessibilityService.instance != null}")
     sb.appendLine("Cursor superpuesto: ${Pointer.overlayOn}")
+    sb.appendLine("Shizuku: ${com.pocketos.vd.VdHost.status}")
     sb.appendLine("--- registro ---")
     Diag.log.forEach { sb.appendLine(it) }
     return sb.toString()

@@ -1,6 +1,7 @@
 package com.pocketos.core.display
 
 import android.app.ActivityOptions
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.hardware.display.DisplayManager
@@ -9,6 +10,7 @@ import android.view.Display
 import androidx.compose.runtime.mutableStateListOf
 import com.pocketos.DesktopActivity
 import com.pocketos.core.input.Pointer
+import com.pocketos.vd.VdHost
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -29,6 +31,7 @@ fun externalDisplay(ctx: Context): Display? =
 private var lastLaunch = 0L
 private var attempts = 0
 private var gaveUpLogged = false
+private var shizukuHinted = false
 
 fun resetLaunchAttempts() { attempts = 0; gaveUpLogged = false }
 
@@ -55,7 +58,16 @@ fun launchDesktopOnExternal(ctx: Context, force: Boolean = false): Boolean {
         Diag.d("Lanzado en pantalla ${d.displayId} '${d.name}' (intento $attempts)")
         true
     } catch (e: Exception) {
-        Diag.d("Error al lanzar: ${e.javaClass.simpleName}: ${e.message}")
-        false
+        Diag.d("Error al lanzar: ${e.javaClass.simpleName}: ${e.message?.take(60)}")
+        if (e is SecurityException) {
+            if (VdHost.ready) {
+                val comp = ComponentName(ctx, DesktopActivity::class.java).flattenToShortString()
+                VdHost.startOnDisplay(d.displayId, comp) { Diag.d("Shizuku am start: $it") }
+                true
+            } else {
+                if (!shizukuHinted) { Diag.d("Android bloquea el lanzamiento. Menú ⋮ -> Shizuku: conectar."); shizukuHinted = true }
+                false
+            }
+        } else false
     }
 }

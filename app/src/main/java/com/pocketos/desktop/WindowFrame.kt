@@ -25,13 +25,18 @@ import com.pocketos.design.LocalAccent
 import com.pocketos.design.BreezeIcon
 
 @Composable
-fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
+fun WindowFrame(w: Win, wm: WindowManager, hidden: Boolean = false, content: @Composable () -> Unit) {
     val density = LocalDensity.current.density
     val accent = LocalAccent.current
     val active = wm.focusedId == w.id
     val shape = if (w.maximized) RoundedCornerShape(0.dp) else RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp, bottomStart = 2.dp, bottomEnd = 2.dp)
-    val base = if (w.maximized) Modifier.fillMaxSize()
-    else Modifier.offset(w.x.dp, w.y.dp).size(w.w.dp, w.h.dp)
+    // Hosted apps stay composed while minimized / on another workspace; they are parked off-screen.
+    val base = when {
+        hidden && w.maximized -> Modifier.offset(x = (-30000).dp).fillMaxSize()
+        hidden -> Modifier.offset(x = (-30000).dp, y = w.y.dp).size(w.w.dp, w.h.dp)
+        w.maximized -> Modifier.fillMaxSize()
+        else -> Modifier.offset(w.x.dp, w.y.dp).size(w.w.dp, w.h.dp)
+    }
 
     Box(
         base.zIndex(w.z.toFloat())
@@ -61,7 +66,8 @@ fun WindowFrame(w: Win, wm: WindowManager, content: @Composable () -> Unit) {
                 contentAlignment = Alignment.Center,
             ) {
                 Text(w.title, color = if (active) Breeze.Text else Breeze.Muted, fontSize = 12.sp, maxLines = 1)
-                BreezeIcon(
+                if (w.icon != null) Image(w.icon, null, Modifier.align(Alignment.CenterStart).padding(start = 8.dp).size(16.dp))
+                else BreezeIcon(
                     when (w.kind) { "files" -> "dolphin"; "settings" -> "settings"; else -> "settings" },
                     Modifier.align(Alignment.CenterStart).padding(start = 8.dp).size(16.dp), null,
                 )

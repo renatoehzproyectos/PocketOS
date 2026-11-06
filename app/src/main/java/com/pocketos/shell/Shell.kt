@@ -166,7 +166,8 @@ fun Taskbar(
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        BreezeIcon(
+                        if (w.icon != null) Image(w.icon, null, Modifier.size(22.dp))
+                        else BreezeIcon(
                             when (w.kind) { "files" -> "dolphin"; "settings" -> "settings"; else -> "terminal" },
                             Modifier.size(22.dp), null,
                         )

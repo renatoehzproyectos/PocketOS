@@ -29,6 +29,7 @@ import com.pocketos.design.drawPlasmaWallpaper
 import com.pocketos.applications.FileManager
 import com.pocketos.applications.SettingsApp
 import com.pocketos.shell.*
+import com.pocketos.vd.VdHost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -50,6 +51,8 @@ fun Desktop(prefs: Preferences) {
     val wall = Wallpapers[(prefs[Keys.WALL] ?: 0).coerceIn(0, Wallpapers.lastIndex)]
     val favs = prefs.strList(Keys.FAVS)
     val recents = prefs.strList(Keys.RECENTS)
+
+    LaunchedEffect(wm.focusedId) { VdHost.focusedWinId = wm.focusedId }
 
     LaunchedEffect(Unit) {
         Remote.cmds.collect { c ->
@@ -86,9 +89,15 @@ fun Desktop(prefs: Preferences) {
                 "pocketos:files" -> wm.open("files", "Dolphin", desk, aw, ah)
                 "pocketos:settings" -> wm.open("settings", "Global Theme — System Settings", desk, aw, ah)
                 else -> if (!a.pkg.startsWith("pocketos:")) {
-                    val w = wm.open("app:${a.pkg}", a.label, desk, aw, ah, a.pkg)
-                    val top = 0  // desktop area starts below system bars padding
-                    launchApp(ctx, a.pkg, displayId, boundsOf(w))
+                    if (VdHost.ready) {
+                        // Real app on a virtual display, drawn inside a Plasma-style window.
+                        wm.open("vd:${a.pkg}", a.label, desk, aw, ah, icon = a.icon)
+                    } else {
+                        // Shizuku not connected: ask for it and fall back to Android's own freeform window.
+                        VdHost.requestPermission()
+                        val w = wm.open("app:${a.pkg}", a.label, desk, aw, ah, a.pkg)
+                        launchApp(ctx, a.pkg, displayId, boundsOf(w))
+                    }
                     scope.launch { ctx.pushRecent(a.pkg) }
                 }
             }
@@ -107,7 +116,12 @@ fun Desktop(prefs: Preferences) {
                 }
                 wm.wins.forEach { w ->
                     key(w.id) {
-                        if (w.desk == desk && !w.minimized && w.pkg.isEmpty()) {
+                        if (w.kind.startsWith("vd:")) {
+                            val hidden = w.desk != desk || w.minimized
+                            WindowFrame(w, wm, hidden) {
+                                HostedApp(w, w.kind.removePrefix("vd:"), hidden) { wm.focus(w) }
+                            }
+                        } else if (w.desk == desk && !w.minimized && w.pkg.isEmpty()) {
                             WindowFrame(w, wm) {
                                 when (w.kind) {
                                     "files" -> FileManager()
