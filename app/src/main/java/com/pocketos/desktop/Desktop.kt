@@ -175,8 +175,7 @@ fun Desktop(prefs: Preferences) {
                 },
                 onFiles = { openApp(Builtins[0]) },
                 onSettings = { openApp(Builtins[1]) },
-                onBrowser = { apps.firstOrNull { it.label.contains("browser", true) || it.label.contains("firefox", true) || it.label.contains("chrome", true) }?.let(::openApp) ?: run { menu = true } },
-                onDiscover = { apps.firstOrNull { it.label.contains("play store", true) || it.label.contains("discover", true) || it.label.contains("app store", true) }?.let(::openApp) ?: run { menu = true } },
+                onBrowser = { (apps.firstOrNull { it.label.contains("chrome", true) } ?: apps.firstOrNull { it.label.contains("browser", true) || it.label.contains("firefox", true) })?.let(::openApp) ?: run { menu = true } },
                 onTerminal = { apps.firstOrNull { it.label.contains("termux", true) || it.label.contains("terminal", true) }?.let(::openApp) ?: run { menu = true } },
                 apps = apps,
             )

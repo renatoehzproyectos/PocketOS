@@ -152,39 +152,36 @@ private fun DockSlot(
 }
 
 /**
- * Floating dock replicated from the reference: workspace pill on the left, centred app icons,
- * weather + tray glyphs + clock on the right, on a translucent graphite panel.
+ * Floating dock replicated from the reference: workspace pill on the left, app icons,
+ * clock on the right, on a translucent graphite panel.
  */
 @Composable
 fun Taskbar(
     wins: List<Win>, desk: Int, focusedId: Int,
     onMenu: () -> Unit, onWin: (Win) -> Unit, onDesk: (Int) -> Unit,
     onFiles: () -> Unit = {}, onSettings: () -> Unit = {}, onBrowser: () -> Unit = {},
-    onDiscover: () -> Unit = {}, onTerminal: () -> Unit = {}, apps: List<AppInfo> = emptyList(),
+    onTerminal: () -> Unit = {}, apps: List<AppInfo> = emptyList(),
     onShowDesktop: () -> Unit = {},
     modifier: Modifier = Modifier,
     menuOpen: Boolean = false,
     desks: Int = 3,
-    weather: String = "19°", // static placeholder: the shell has no weather source yet
 ) {
     val accent = LocalAccent.current
     val now = rememberNow()
     val here = wins.filter { it.desk == desk }
     fun pkgOf(w: Win) = if (w.kind.contains(":")) w.kind.substringAfter(":") else ""
-    val browser = apps.firstOrNull { it.label.contains("firefox", true) || it.label.contains("browser", true) || it.label.contains("chrome", true) }
-    val store = apps.firstOrNull { it.label.contains("play store", true) || it.label.contains("discover", true) || it.label.contains("app store", true) }
+    val browser = apps.firstOrNull { it.label.contains("chrome", true) } ?: apps.firstOrNull { it.label.contains("browser", true) || it.label.contains("firefox", true) }
     val term = apps.firstOrNull { it.label.contains("termux", true) || it.label.contains("terminal", true) }
     fun winFor(k: DockIconKind): Win? = here.firstOrNull { w ->
         when (k) {
             DockIconKind.Settings -> w.kind == "settings"
             DockIconKind.Files -> w.kind == "files"
-            DockIconKind.Firefox -> browser != null && pkgOf(w) == browser.pkg
-            DockIconKind.Store -> store != null && pkgOf(w) == store.pkg
+            DockIconKind.Chrome -> browser != null && pkgOf(w) == browser.pkg
             DockIconKind.Terminal -> term != null && pkgOf(w) == term.pkg
             else -> false
         }
     }
-    val pinned = listOf(DockIconKind.Settings, DockIconKind.Store, DockIconKind.Terminal, DockIconKind.Files, DockIconKind.Firefox, DockIconKind.Dino)
+    val pinned = listOf(DockIconKind.Settings, DockIconKind.Terminal, DockIconKind.Files, DockIconKind.Chrome)
     val pinnedWins = pinned.mapNotNull { winFor(it)?.id }
     val extras = here.filter { it.id !in pinnedWins }.take(6)
     fun isActive(w: Win?) = w != null && w.id == focusedId && !w.minimized
@@ -224,15 +221,14 @@ fun Taskbar(
                     onClick = {
                         if (w != null) onWin(w) else when (kind) {
                             DockIconKind.Settings -> onSettings()
-                            DockIconKind.Store -> onDiscover()
                             DockIconKind.Terminal -> onTerminal()
                             DockIconKind.Files -> onFiles()
-                            DockIconKind.Firefox -> onBrowser()
-                            else -> onMenu() // purple slot: placeholder, opens the launcher
+                            DockIconKind.Chrome -> onBrowser()
+                            else -> onMenu()
                         }
                     },
                 ) {
-                    val real = if (kind == DockIconKind.Firefox) browser?.icon else null
+                    val real = if (kind == DockIconKind.Chrome) browser?.icon else null
                     if (real != null) Image(real, browser?.label, Modifier.fillMaxSize())
                     else DockIcon(kind, Modifier.fillMaxSize())
                 }
@@ -248,23 +244,11 @@ fun Taskbar(
             }
         }
 
-        // ---- Right: weather, tray glyphs, clock -----------------------------------------------
+        // ---- Right: clock ----
         Row(
             Modifier.align(Alignment.CenterEnd).fillMaxHeight().offset(y = (-2).dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TrayIcon(TrayGlyph.Sun, Modifier.size(32.dp))
-            Spacer(Modifier.width(13.dp))
-            Text(weather, color = Breeze.Text, fontSize = 18.sp, maxLines = 1, softWrap = false)
-            Spacer(Modifier.width(20.dp))
-            TrayIcon(TrayGlyph.Ring, Modifier.size(24.dp))
-            Spacer(Modifier.width(22.dp))
-            TrayIcon(TrayGlyph.Shield, Modifier.size(23.dp))
-            Spacer(Modifier.width(22.dp))
-            TrayIcon(TrayGlyph.Volume, Modifier.size(22.dp, 17.dp))
-            Spacer(Modifier.width(22.dp))
-            TrayIcon(TrayGlyph.Chevron, Modifier.offset(y = (-4).dp).size(19.dp, 10.dp))
-            Spacer(Modifier.width(21.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     now.format(DateTimeFormatter.ofPattern("HH:mm")),
@@ -307,7 +291,6 @@ fun AppTile(app: AppInfo, fav: Boolean, onOpen: () -> Unit, onFav: () -> Unit) {
     }
 }
 
-private const val UserName = "Senthilkumar Palani"
 private val KSidebar = Color(0xB32A2A32)
 private val KContent = Color(0xD11E1E24)
 private val KHeader = Color(0xD92C2C34)
@@ -374,36 +357,23 @@ fun Kickoff(
     var q by remember { mutableStateOf("") }
     val all = Builtins + apps
     var category by remember { mutableIntStateOf(0) }
-    val categories = listOf("Favorites", "All Applications", "Development", "Graphics", "Help", "Internet", "Multimedia", "Office", "System", "Utilities")
-    val catIcons = listOf("kick-bookmark", "category-all", "category-development", "category-graphics", "help", "category-internet", "category-multimedia", "category-office", "category-system", "category-utilities")
+    val categories = listOf("Favorites", "All Applications")
+    val catIcons = listOf("kick-bookmark", "category-all")
 
     fun find(vararg keys: String) = apps.firstOrNull { a -> keys.any { a.label.contains(it, true) } }
     // Same six favorites, same order, as the Plasma 6.4 Kickoff reference.
-    val reference = listOf(
-        find("firefox", "browser", "chrome") ?: AppInfo("Firefox", "pocketos:none:firefox"),
+    val reference = listOfNotNull(
+        find("chrome", "firefox", "browser"),
         Builtins[1],
         Builtins[0],
-        find("kwrite", "text editor", "notes") ?: AppInfo("KWrite", "pocketos:none:kwrite", breeze = "kwrite"),
-        find("termux", "terminal") ?: AppInfo("Konsole", "pocketos:none:konsole", breeze = "terminal"),
-        find("play store", "discover", "app store") ?: AppInfo("Discover", "pocketos:none:discover", breeze = "discover"),
+        find("kwrite", "text editor", "notes"),
+        find("termux", "terminal"),
     )
     val searching = q.isNotBlank()
     val selected = when {
         searching -> all.filter { it.label.contains(q, true) }
         category == 0 -> (reference + favs.mapNotNull { p -> all.find { it.pkg == p } }).distinctBy { it.pkg }
-        category == 1 -> all
-        else -> all.filter { app ->
-            when (category) {
-                2 -> app.label.contains("dev", true) || app.label.contains("code", true) || app.label.contains("terminal", true) || app.label.contains("termux", true)
-                3 -> app.label.contains("photo", true) || app.label.contains("camera", true) || app.label.contains("image", true) || app.label.contains("gallery", true)
-                4 -> app.label.contains("help", true)
-                5 -> app.label.contains("browser", true) || app.label.contains("chrome", true) || app.label.contains("firefox", true)
-                6 -> app.label.contains("music", true) || app.label.contains("video", true) || app.label.contains("player", true)
-                7 -> app.label.contains("office", true) || app.label.contains("docs", true) || app.label.contains("sheets", true)
-                8 -> app.label.contains("settings", true) || app.label.contains("ajustes", true) || app.label.contains("clock", true)
-                else -> app.label.contains("file", true) || app.label.contains("archiv", true) || app.label.contains("calc", true)
-            }
-        }
+        else -> all
     }
     val shape = RoundedCornerShape(14.dp)
     Column(
@@ -412,18 +382,11 @@ fun Kickoff(
             .background(KContent).border(1.dp, Color(0x33FFFFFF), shape)
             .pointerInput(Unit) { detectTapGestures { } },
     ) {
-        // Header: avatar + user name, search field, configure + pin buttons
+        // Header: search field
         Row(Modifier.fillMaxWidth().height(46.dp).background(KHeader), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.width(239.dp).padding(start = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(28.dp).clip(CircleShape).border(1.dp, Color(0xFF8BC34A), CircleShape), contentAlignment = Alignment.Center) {
-                    Text("SP", color = Color(0xFF8BC34A), fontSize = 9.sp)
-                }
-                Spacer(Modifier.width(5.dp))
-                Text(UserName, color = Breeze.Text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
             val fieldShape = RoundedCornerShape(8.dp)
             Row(
-                Modifier.weight(1f).widthIn(max = 340.dp).height(30.dp).clip(fieldShape)
+                Modifier.padding(horizontal = 12.dp).weight(1f).height(30.dp).clip(fieldShape)
                     .background(Color(0x66000000)).border(1.dp, Color(0x24FFFFFF), fieldShape).padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -442,16 +405,12 @@ fun Kickoff(
                     },
                 )
             }
-            Spacer(Modifier.weight(.001f))
-            BreezeIcon("kick-configure", Modifier.padding(start = 12.dp).size(22.dp), "Configure")
-            BreezeIcon("kick-pin", Modifier.padding(start = 12.dp, end = 12.dp).size(22.dp), "Keep open")
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(KLine))
         Row(Modifier.weight(1f).fillMaxWidth()) {
             // Sidebar
             Column(Modifier.width(235.dp).fillMaxHeight().background(KSidebar).padding(horizontal = 4.dp, vertical = 6.dp)) {
                 categories.forEachIndexed { i, t ->
-                    if (i == 2) Box(Modifier.padding(vertical = 5.dp, horizontal = 4.dp).fillMaxWidth().height(1.dp).background(KLine))
                     val src = remember { MutableInteractionSource() }
                     val hovered by src.collectIsHoveredAsState()
                     val sh = RoundedCornerShape(4.dp)
@@ -464,7 +423,6 @@ fun Kickoff(
                         BreezeIcon(catIcons[i], Modifier.size(22.dp), t)
                         Spacer(Modifier.width(12.dp))
                         Text(t, color = Breeze.Text, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f))
-                        if (i == 8) Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF27AE60)))
                     }
                 }
             }
@@ -486,7 +444,7 @@ fun Kickoff(
             }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(KLine))
-        // Footer: Applications / Places tabs and power actions
+        // Footer: Applications tab
         Row(Modifier.fillMaxWidth().height(46.dp).background(KHeader), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.padding(start = 7.dp).width(114.dp).fillMaxHeight().clickable { category = 1; q = "" }) {
                 Box(Modifier.align(Alignment.TopStart).padding(horizontal = 6.dp).fillMaxWidth().height(3.dp).background(accent))
@@ -496,20 +454,7 @@ fun Kickoff(
                     Text("Applications", color = Breeze.Text, fontSize = 13.sp, maxLines = 1, softWrap = false)
                 }
             }
-            Row(Modifier.padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                BreezeIcon("kick-places", Modifier.size(18.dp), "Places")
-                Spacer(Modifier.width(8.dp))
-                Text("Places", color = Breeze.Text, fontSize = 13.sp, maxLines = 1, softWrap = false)
-            }
             Spacer(Modifier.weight(1f))
-            listOf("kick-sleep" to "Sleep", "kick-restart" to "Restart", "kick-shutdown" to "Shut Down", "kick-session" to "Session").forEach { (ic, label) ->
-                Row(Modifier.clip(RoundedCornerShape(4.dp)).clickable { }.padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    BreezeIcon(ic, Modifier.size(16.dp), label)
-                    Spacer(Modifier.width(5.dp))
-                    Text(label, color = Breeze.Text, fontSize = 13.sp, maxLines = 1)
-                }
-            }
-            Spacer(Modifier.width(4.dp))
         }
     }
 }
