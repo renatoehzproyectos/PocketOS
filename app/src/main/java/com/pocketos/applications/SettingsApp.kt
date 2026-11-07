@@ -22,6 +22,7 @@ import com.pocketos.design.Breeze
 import com.pocketos.vd.VdHost
 import com.pocketos.design.BreezeIcon
 import com.pocketos.design.Wallpapers
+import com.pocketos.design.WallpaperRes
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -32,8 +33,8 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
     val curAccent = prefs[Keys.ACCENT] ?: Accents[0]
     val curWall = prefs[Keys.WALL] ?: 0
 
-    Row(Modifier.fillMaxSize().background(Color(0xB8141618))) {
-        Column(Modifier.width(270.dp).fillMaxHeight().background(Color(0xB31E2124))) {
+    Row(Modifier.fillMaxSize().background(Color(0xC71A1A20))) {
+        Column(Modifier.width(270.dp).fillMaxHeight().background(Color(0xB3222229))) {
             Row(Modifier.fillMaxWidth().height(54.dp).padding(horizontal = 16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text("‹", color = Breeze.Text, fontSize = 25.sp)
                 Text("Colors & Themes", color = Breeze.Text, fontSize = 15.sp, modifier = Modifier.weight(1f).padding(start = 8.dp))
@@ -41,8 +42,8 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
             }
             cats.forEachIndexed { i, c ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 5.dp, vertical = 1.dp).height(31.dp)
-                    .clip(RoundedCornerShape(4.dp)).background(if (i == cat) Color(0xFF1D4A5F) else Color.Transparent)
-                    .then(if (i == cat) Modifier.border(1.dp, Color(0xFF3DAEE9), RoundedCornerShape(4.dp)) else Modifier)
+                    .clip(RoundedCornerShape(4.dp)).background(if (i == cat) Color(0xFF2B4380) else Color.Transparent)
+                    .then(if (i == cat) Modifier.border(1.dp, Color(0xFF3B69C7), RoundedCornerShape(4.dp)) else Modifier)
                     .clickable { cat = i }.padding(start = if (i == 0) 7.dp else 25.dp, end = 7.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     val settingIcon = when (i) {
                         0 -> "settings-global"
@@ -85,10 +86,10 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Wallpapers.forEachIndexed { i, colors ->
                                 Box(Modifier.size(110.dp, 64.dp).clip(RoundedCornerShape(5.dp))
-                                    .then(if (i == 0) Modifier else Modifier.background(Brush.linearGradient(colors)))
+                                    .then(if (WallpaperRes[i] != null) Modifier else Modifier.background(Brush.linearGradient(colors)))
                                     .border(if (i == curWall) 2.dp else 1.dp, if (i == curWall) Color.White else Breeze.Border, RoundedCornerShape(5.dp))
                                     .clickable { onWall(i) }) {
-                                    if (i == 0) Image(painterResource(R.drawable.wallpaper_plasma), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                    WallpaperRes[i]?.let { res -> Image(painterResource(res), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                                 }
                             }
                         }
@@ -105,7 +106,7 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
                 }
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x33FCFCFC)))
-            Row(Modifier.fillMaxWidth().height(52.dp).background(Color(0xB3232629)).padding(horizontal = 10.dp),
+            Row(Modifier.fillMaxWidth().height(52.dp).background(Color(0xB32C2C34)).padding(horizontal = 10.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 BreezeButton("Help", "help") {}
                 Spacer(Modifier.width(6.dp))
@@ -119,7 +120,7 @@ fun SettingsApp(prefs: Preferences, onAccent: (Long) -> Unit, onWall: (Int) -> U
 private fun BreezeButton(label: String, icon: String, onClick: () -> Unit) {
     val shape = RoundedCornerShape(4.dp)
     Row(
-        Modifier.height(30.dp).clip(shape).background(Color(0xFF31363B)).border(1.dp, Color(0xFF4D5358), shape)
+        Modifier.height(30.dp).clip(shape).background(Color(0xFF34343C)).border(1.dp, Color(0xFF4A4A54), shape)
             .clickable(onClick = onClick).padding(horizontal = 10.dp),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
@@ -133,8 +134,8 @@ private fun BreezeButton(label: String, icon: String, onClick: () -> Unit) {
 private fun ThemeCard(name: String, index: Int, selected: Boolean, onClick: () -> Unit) {
     Column(Modifier.width(174.dp).clickable(onClick = onClick), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
         Box(Modifier.fillMaxWidth().height(106.dp).clip(RoundedCornerShape(5.dp))
-            .background(if (selected) Color(0xFF293A42) else Color(0xFF101214))
-            .border(if (selected) 2.dp else 1.dp, if (selected) Color(0xFF3DAEE9) else Color(0xFF303438), RoundedCornerShape(5.dp))) {
+            .background(if (selected) Color(0xFF283250) else Color(0xFF101214))
+            .border(if (selected) 2.dp else 1.dp, if (selected) Color(0xFF3B69C7) else Color(0xFF303438), RoundedCornerShape(5.dp))) {
             Canvas(Modifier.fillMaxSize()) {
                 val light = index == 0
                 val wall = when (index) {
@@ -150,18 +151,18 @@ private fun ThemeCard(name: String, index: Int, selected: Boolean, onClick: () -
                 // panel
                 drawRect(if (light) Color(0xFFEFF0F1) else Color(0xFF1E2124), o(0f, .92f), sz(1f, .08f))
                 // back window (file manager)
-                val winBg = if (light) Color(0xFFFCFCFC) else Color(0xFF1B1E20)
+                val winBg = if (light) Color(0xFFFCFCFC) else Color(0xFF1E1E24)
                 val bar = if (light) Color(0xFFDDE0E3) else Color(0xFF2A2E32)
                 val txt = if (light) Color(0xFF9AA0A5) else Color(0xFF50565B)
                 drawRoundRect(winBg, o(.06f, .14f), sz(.62f, .70f), r)
                 drawRect(bar, o(.06f, .14f), sz(.62f, .07f))
-                drawRect(if (light) Color(0xFFEFF0F1) else Color(0xFF232629), o(.06f, .21f), sz(.14f, .63f))
-                for (row in 0..2) for (col in 0..3) drawRect(Color(0xFF3DAEE9), o(.24f + col * .10f, .27f + row * .15f), sz(.055f, .075f))
+                drawRect(if (light) Color(0xFFEFF0F1) else Color(0xFF2C2C34), o(.06f, .21f), sz(.14f, .63f))
+                for (row in 0..2) for (col in 0..3) drawRect(Color(0xFF3B69C7), o(.24f + col * .10f, .27f + row * .15f), sz(.055f, .075f))
                 // front window (text editor / settings)
                 drawRoundRect(winBg, o(.40f, .36f), sz(.54f, .50f), r)
                 drawRect(bar, o(.40f, .36f), sz(.54f, .07f))
                 for (row in 0..4) drawRect(txt, o(.44f, .47f + row * .075f), sz(if (row % 2 == 0) .40f else .28f, .018f))
-                drawRect(Color(0xFF3DAEE9), o(.80f, .47f), sz(.09f, .09f))
+                drawRect(Color(0xFF3B69C7), o(.80f, .47f), sz(.09f, .09f))
             }
         }
         Text(name, color = if (selected) Color.White else Breeze.Text, fontSize = 13.sp,

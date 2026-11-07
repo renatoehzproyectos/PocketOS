@@ -24,6 +24,8 @@ import com.pocketos.core.applications.*
 import com.pocketos.core.storage.*
 import com.pocketos.core.input.Remote
 import com.pocketos.core.window.WindowManager
+import com.pocketos.design.Dock
+import com.pocketos.design.WallpaperRes
 import com.pocketos.design.Wallpapers
 import com.pocketos.design.drawPlasmaWallpaper
 import com.pocketos.applications.FileManager
@@ -42,13 +44,15 @@ fun Desktop(prefs: Preferences) {
         (w.x * dens).toInt(), (w.y * dens).toInt(), ((w.x + w.w) * dens).toInt(), ((w.y + w.h) * dens).toInt())
     val scope = rememberCoroutineScope()
     val wm = remember { WindowManager() }
-    var desk by remember { mutableIntStateOf(0) }
+    var desk by remember { mutableIntStateOf(1) } // 3 workspaces, the middle one is active at start (as in the reference)
     var menu by remember { mutableStateOf(false) }
     val apps by produceState(emptyList<AppInfo>()) {
         value = withContext(Dispatchers.IO) { loadApps(ctx) }
     }
     val displayId = remember { ctx.display?.displayId ?: 0 }
-    val wall = Wallpapers[(prefs[Keys.WALL] ?: 0).coerceIn(0, Wallpapers.lastIndex)]
+    val wallIdx = (prefs[Keys.WALL] ?: 0).coerceIn(0, Wallpapers.lastIndex)
+    val wall = Wallpapers[wallIdx]
+    val wallRes = WallpaperRes.getOrNull(wallIdx)
     val favs = prefs.strList(Keys.FAVS)
     val recents = prefs.strList(Keys.RECENTS)
 
@@ -81,7 +85,8 @@ fun Desktop(prefs: Preferences) {
 
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black).systemBarsPadding()) {
         val aw = maxWidth.value
-        val ah = maxHeight.value - 52f
+        val reserve = Dock.Height + Dock.BottomGap
+        val ah = maxHeight.value - reserve
 
         fun openApp(a: AppInfo) {
             menu = false
@@ -103,17 +108,19 @@ fun Desktop(prefs: Preferences) {
             }
         }
 
-        Column(Modifier.fillMaxSize()) {
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                if ((prefs[Keys.WALL] ?: 0) == 0) Image(
-                    painterResource(R.drawable.wallpaper_plasma), null,
-                    Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
-                )
-                else Box(Modifier.fillMaxSize().background(Brush.linearGradient(wall)))
-                Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { menu = false } })
-                Column(Modifier.padding(start = 34.dp, top = 26.dp)) {
-                    DesktopIcon("📁", "Files") { openApp(Builtins[0]) }
-                }
+        Box(Modifier.fillMaxSize()) {
+            // Wallpaper runs full-bleed behind the floating dock.
+            if (wallRes != null) Image(
+                painterResource(wallRes), null,
+                Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
+            )
+            else Box(Modifier.fillMaxSize().background(Brush.linearGradient(wall)))
+            Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { menu = false } })
+            Column(Modifier.padding(start = 34.dp, top = 26.dp)) {
+                DesktopIcon("📁", "Files") { openApp(Builtins[0]) }
+            }
+            // Window area: everything above the dock and its bottom gap.
+            Box(Modifier.fillMaxSize().padding(bottom = reserve.dp)) {
                 wm.wins.forEach { w ->
                     key(w.id) {
                         if (w.kind.startsWith("vd:")) {
@@ -135,16 +142,18 @@ fun Desktop(prefs: Preferences) {
                         }
                     }
                 }
-                if (menu) {
-                    Kickoff(
-                        apps, favs, recents, { a -> openApp(a) },
-                        { a -> scope.launch { ctx.toggleFav(a.pkg) } },
-                        Modifier.align(Alignment.BottomStart).padding(start = 8.dp, bottom = 8.dp).zIndex(100000f),
-                    )
-                }
+            }
+            if (menu) {
+                Kickoff(
+                    apps, favs, recents, { a -> openApp(a) },
+                    { a -> scope.launch { ctx.toggleFav(a.pkg) } },
+                    Modifier.align(Alignment.BottomStart).padding(start = 8.dp, bottom = (reserve + 8f).dp).zIndex(100000f),
+                )
             }
             Taskbar(
                 wm.wins, desk, wm.focusedId,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Dock.BottomGap.dp),
+                menuOpen = menu,
                 onMenu = { menu = !menu },
                 onWin = { w ->
                     menu = false

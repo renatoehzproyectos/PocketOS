@@ -37,6 +37,7 @@ import com.pocketos.core.applications.Builtins
 import com.pocketos.core.window.Win
 import com.pocketos.design.Breeze
 import com.pocketos.design.BreezeIcon
+import com.pocketos.design.Dock
 import com.pocketos.design.LocalAccent
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -122,7 +123,38 @@ private fun PanelGlyph(kind: Int, modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DockSlot(
+    running: Boolean, active: Boolean, onClick: () -> Unit,
+    lit: Boolean = false, content: @Composable BoxScope.() -> Unit,
+) {
+    val src = remember { MutableInteractionSource() }
+    val hovered by src.collectIsHoveredAsState()
+    Box(
+        Modifier.width(Dock.Pitch.dp).fillMaxHeight().hoverable(src)
+            .clickable(interactionSource = src, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (hovered || lit) Box(
+            Modifier.size((Dock.IconSize + 12f).dp).offset(y = (-Dock.IconsLift).dp)
+                .background(Color(0x1FFFFFFF), RoundedCornerShape(14.dp)),
+        )
+        Box(
+            Modifier.size(Dock.IconSize.dp).offset(y = (-Dock.IconsLift).dp),
+            contentAlignment = Alignment.Center, content = content,
+        )
+        // Running-app indicator: long, thin, light bar under the icon (68 x 3 dp).
+        if (running) Box(
+            Modifier.align(Alignment.BottomCenter).padding(bottom = 3.dp).width(68.dp).height(3.dp)
+                .background(Color.White.copy(alpha = if (active) .85f else .5f), RoundedCornerShape(2.dp)),
+        )
+    }
+}
+
+/**
+ * Floating dock replicated from the reference: workspace pill on the left, centred app icons,
+ * weather + tray glyphs + clock on the right, on a translucent graphite panel.
+ */
 @Composable
 fun Taskbar(
     wins: List<Win>, desk: Int, focusedId: Int,
@@ -130,68 +162,124 @@ fun Taskbar(
     onFiles: () -> Unit = {}, onSettings: () -> Unit = {}, onBrowser: () -> Unit = {},
     onDiscover: () -> Unit = {}, onTerminal: () -> Unit = {}, apps: List<AppInfo> = emptyList(),
     onShowDesktop: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    menuOpen: Boolean = false,
+    desks: Int = 3,
+    weather: String = "19°", // static placeholder: the shell has no weather source yet
 ) {
     val accent = LocalAccent.current
     val now = rememberNow()
-    Row(
-        Modifier.fillMaxWidth().height(52.dp).background(Color(0xB81B1E20)),
-        verticalAlignment = Alignment.CenterVertically,
+    val here = wins.filter { it.desk == desk }
+    fun pkgOf(w: Win) = if (w.kind.contains(":")) w.kind.substringAfter(":") else ""
+    val browser = apps.firstOrNull { it.label.contains("firefox", true) || it.label.contains("browser", true) || it.label.contains("chrome", true) }
+    val store = apps.firstOrNull { it.label.contains("play store", true) || it.label.contains("discover", true) || it.label.contains("app store", true) }
+    val term = apps.firstOrNull { it.label.contains("termux", true) || it.label.contains("terminal", true) }
+    fun winFor(k: DockIconKind): Win? = here.firstOrNull { w ->
+        when (k) {
+            DockIconKind.Settings -> w.kind == "settings"
+            DockIconKind.Files -> w.kind == "files"
+            DockIconKind.Firefox -> browser != null && pkgOf(w) == browser.pkg
+            DockIconKind.Store -> store != null && pkgOf(w) == store.pkg
+            DockIconKind.Terminal -> term != null && pkgOf(w) == term.pkg
+            else -> false
+        }
+    }
+    val pinned = listOf(DockIconKind.Settings, DockIconKind.Store, DockIconKind.Terminal, DockIconKind.Files, DockIconKind.Firefox, DockIconKind.Dino)
+    val pinnedWins = pinned.mapNotNull { winFor(it)?.id }
+    val extras = here.filter { it.id !in pinnedWins }.take(6)
+    fun isActive(w: Win?) = w != null && w.id == focusedId && !w.minimized
+
+    Box(
+        modifier.fillMaxWidth().height(Dock.Height.dp).background(Breeze.Panel.copy(alpha = Dock.Alpha)),
     ) {
-        Box(
-            Modifier.padding(start = 6.dp, end = 4.dp).size(44.dp).clip(RoundedCornerShape(4.dp)).clickable(onClick = onMenu),
-            contentAlignment = Alignment.Center,
-        ) { BreezeIcon("launcher-kde", Modifier.size(36.dp), "Application Launcher") }
-        listOf("settings", "discover", "dolphin", "firefox", "terminal").forEachIndexed { i, icon ->
-            Box(Modifier.padding(horizontal = 2.dp).size(38.dp, 44.dp).clip(RoundedCornerShape(4.dp))
-                .clickable { when (i) { 0 -> onSettings(); 1 -> onDiscover(); 2 -> onFiles(); 3 -> onBrowser(); else -> onTerminal() } }, contentAlignment = Alignment.Center) {
-                val installed = when (i) {
-                    3 -> apps.firstOrNull { it.label.contains("firefox", true) || it.label.contains("browser", true) || it.label.contains("chrome", true) }
-                    else -> null
-                }
-                if (installed?.icon != null) Image(installed.icon, contentDescription = installed.label, modifier = Modifier.size(30.dp))
-                else if (icon == "firefox") PanelGlyph(4, Modifier.size(30.dp))
-                else BreezeIcon(icon, Modifier.size(32.dp), icon)
-            }
-        }
-        Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()).widthIn(min = 1.dp)) {
-            wins.filter { it.desk == desk }.forEach { w ->
-                val active = w.id == focusedId && !w.minimized
-                val tShape = RoundedCornerShape(4.dp)
+        // 1 px lighter top edge seen in the reference
+        Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(1.5.dp).background(Color(0x14FFFFFF)))
+
+        // ---- Left: workspace indicator (dot, active pill, dot) --------------------------------
+        Row(Modifier.align(Alignment.CenterStart).padding(start = 3.5.dp).fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
+            for (i in 0 until desks) {
                 Box(
-                    Modifier.padding(horizontal = 2.dp).height(44.dp).widthIn(min = 120.dp, max = 180.dp)
-                        .clip(tShape)
-                        .background(if (active) accent.copy(alpha = .22f) else Color(0x14FCFCFC))
-                        .then(if (active) Modifier.border(1.dp, accent, tShape) else Modifier)
-                        .clickable { onWin(w) }.padding(horizontal = 8.dp),
-                    contentAlignment = Alignment.CenterStart,
+                    Modifier.fillMaxHeight().padding(horizontal = 3.5.dp)
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onDesk(i) },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (w.icon != null) Image(w.icon, null, Modifier.size(22.dp))
-                        else BreezeIcon(
-                            when (w.kind) { "files" -> "dolphin"; "settings" -> "settings"; else -> "terminal" },
-                            Modifier.size(22.dp), null,
-                        )
-                        Spacer(Modifier.width(7.dp))
-                        Text(w.title, color = Breeze.Text, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth(if (active) 1f else .35f).height(2.dp)
-                        .background(if (active) accent else Color(0x80FCFCFC)))
+                    if (i == desk) Box(Modifier.size(45.dp, 15.dp).background(accent, CircleShape))
+                    else Box(
+                        Modifier.size(12.dp).background(Color(0xFF8E8D93), CircleShape)
+                            .border(1.5.dp, Color(0xFFC2C1C6), CircleShape),
+                    )
                 }
             }
         }
-        Spacer(Modifier.weight(1f))
-        Row(Modifier.padding(start = 8.dp, end = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-            listOf("notifications", "clipboard", "volume-muted", "brightness", "display", "arrow-up").forEach { icon ->
-                BreezeIcon(icon, Modifier.padding(horizontal = 3.dp).size(18.dp), icon)
+
+        // ---- Centre: launcher + pinned apps + other running windows ---------------------------
+        Row(Modifier.align(Alignment.CenterStart).offset(x = Dock.IconsStart.dp).fillMaxHeight()) {
+            DockSlot(running = false, active = false, onClick = onMenu, lit = menuOpen) {
+                DockIcon(DockIconKind.Launcher, Modifier.fillMaxSize())
             }
-            Column(Modifier.padding(start = 8.dp), horizontalAlignment = Alignment.End) {
-                Text(now.format(DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.US)), color = Breeze.Text, fontSize = 14.sp, lineHeight = 15.sp)
-                Text(now.format(DateTimeFormatter.ofPattern("dd/MM/yy")), color = Breeze.Text, fontSize = 11.sp, lineHeight = 12.sp)
+            pinned.forEach { kind ->
+                val w = winFor(kind)
+                DockSlot(
+                    running = w != null, active = isActive(w),
+                    onClick = {
+                        if (w != null) onWin(w) else when (kind) {
+                            DockIconKind.Settings -> onSettings()
+                            DockIconKind.Store -> onDiscover()
+                            DockIconKind.Terminal -> onTerminal()
+                            DockIconKind.Files -> onFiles()
+                            DockIconKind.Firefox -> onBrowser()
+                            else -> onMenu() // purple slot: placeholder, opens the launcher
+                        }
+                    },
+                ) {
+                    val real = if (kind == DockIconKind.Firefox) browser?.icon else null
+                    if (real != null) Image(real, browser?.label, Modifier.fillMaxSize())
+                    else DockIcon(kind, Modifier.fillMaxSize())
+                }
             }
-            Box(Modifier.padding(start = 10.dp).size(width = 18.dp, height = 28.dp)
-                .combinedClickable(onClick = onShowDesktop, onLongClick = { onDesk((desk + 1) % 4) }), contentAlignment = Alignment.Center) {
-                Canvas(Modifier.size(13.dp)) { drawRect(Color(0xFFFCFCFC), style = Stroke(1.2.dp.toPx())) }
+            extras.forEach { w ->
+                DockSlot(running = true, active = isActive(w), onClick = { onWin(w) }) {
+                    if (w.icon != null) Image(w.icon, w.title, Modifier.fillMaxSize())
+                    else BreezeIcon(
+                        when (w.kind) { "files" -> "dolphin"; "settings" -> "settings"; else -> "terminal" },
+                        Modifier.fillMaxSize(), w.title,
+                    )
+                }
             }
+        }
+
+        // ---- Right: weather, tray glyphs, clock -----------------------------------------------
+        Row(
+            Modifier.align(Alignment.CenterEnd).fillMaxHeight().offset(y = (-2).dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TrayIcon(TrayGlyph.Sun, Modifier.size(32.dp))
+            Spacer(Modifier.width(13.dp))
+            Text(weather, color = Breeze.Text, fontSize = 18.sp, maxLines = 1, softWrap = false)
+            Spacer(Modifier.width(20.dp))
+            TrayIcon(TrayGlyph.Ring, Modifier.size(24.dp))
+            Spacer(Modifier.width(22.dp))
+            TrayIcon(TrayGlyph.Shield, Modifier.size(23.dp))
+            Spacer(Modifier.width(22.dp))
+            TrayIcon(TrayGlyph.Volume, Modifier.size(22.dp, 17.dp))
+            Spacer(Modifier.width(22.dp))
+            TrayIcon(TrayGlyph.Chevron, Modifier.offset(y = (-4).dp).size(19.dp, 10.dp))
+            Spacer(Modifier.width(21.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    now.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    color = Breeze.Text, fontSize = 24.sp, lineHeight = 24.sp, maxLines = 1, softWrap = false,
+                )
+                Text(
+                    now.format(DateTimeFormatter.ofPattern("EEE dd", java.util.Locale.getDefault())).replace(".", ""),
+                    color = Breeze.Text, fontSize = 18.sp, lineHeight = 20.sp, maxLines = 1, softWrap = false,
+                )
+            }
+            // Invisible "show desktop" strip at the far right edge (13 dp, same as the reference margin)
+            Box(
+                Modifier.width(13.dp).fillMaxHeight()
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onShowDesktop),
+            )
         }
     }
 }
@@ -220,15 +308,15 @@ fun AppTile(app: AppInfo, fav: Boolean, onOpen: () -> Unit, onFav: () -> Unit) {
 }
 
 private const val UserName = "Senthilkumar Palani"
-private val KSidebar = Color(0xB3292532)
-private val KContent = Color(0xC71B1E20)
-private val KHeader = Color(0xCC232629)
-private val KLine = Color(0x33FCFCFC)
+private val KSidebar = Color(0xB32A2A32)
+private val KContent = Color(0xD11E1E24)
+private val KHeader = Color(0xD92C2C34)
+private val KLine = Color(0x24FFFFFF)
 
 @Composable
 private fun KItemBg(selected: Boolean, hovered: Boolean, accent: Color, shape: RoundedCornerShape): Modifier =
-    if (selected || hovered)
-        Modifier.background(accent.copy(alpha = if (selected) .28f else .22f), shape).border(1.dp, accent.copy(alpha = .85f), shape)
+    if (selected) Modifier.background(accent.copy(alpha = .85f), shape)
+    else if (hovered) Modifier.background(Color(0x1FFFFFFF), shape)
     else Modifier
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -317,11 +405,11 @@ fun Kickoff(
             }
         }
     }
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(14.dp)
     Column(
         modifier.widthIn(max = 655.dp).fillMaxWidth().height(516.dp)
             .shadow(18.dp, shape, clip = false, ambientColor = Color.Black, spotColor = Color.Black).clip(shape)
-            .background(KContent).border(1.dp, Color(0xFF45484C), shape)
+            .background(KContent).border(1.dp, Color(0x33FFFFFF), shape)
             .pointerInput(Unit) { detectTapGestures { } },
     ) {
         // Header: avatar + user name, search field, configure + pin buttons
@@ -333,10 +421,10 @@ fun Kickoff(
                 Spacer(Modifier.width(5.dp))
                 Text(UserName, color = Breeze.Text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            val fieldShape = RoundedCornerShape(4.dp)
+            val fieldShape = RoundedCornerShape(8.dp)
             Row(
                 Modifier.weight(1f).widthIn(max = 340.dp).height(30.dp).clip(fieldShape)
-                    .background(Color(0x991B1E20)).border(1.dp, Color(0x663A3F44), fieldShape).padding(horizontal = 8.dp),
+                    .background(Color(0x66000000)).border(1.dp, Color(0x24FFFFFF), fieldShape).padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 BreezeIcon("kick-search", Modifier.size(16.dp), "Search")

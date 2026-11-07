@@ -29,7 +29,7 @@ fun WindowFrame(w: Win, wm: WindowManager, hidden: Boolean = false, content: @Co
     val density = LocalDensity.current.density
     val accent = LocalAccent.current
     val active = wm.focusedId == w.id
-    val shape = if (w.maximized) RoundedCornerShape(0.dp) else RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp, bottomStart = 2.dp, bottomEnd = 2.dp)
+    val shape = if (w.maximized) RoundedCornerShape(0.dp) else RoundedCornerShape(12.dp)
     // Hosted apps stay composed while minimized / on another workspace; they are parked off-screen.
     val base = when {
         hidden && w.maximized -> Modifier.offset(x = (-30000).dp).fillMaxSize()
@@ -42,8 +42,8 @@ fun WindowFrame(w: Win, wm: WindowManager, hidden: Boolean = false, content: @Co
         base.zIndex(w.z.toFloat())
             .then(if (w.maximized) Modifier else Modifier.shadow(if (active) 22.dp else 12.dp, shape, clip = false, ambientColor = Color.Black, spotColor = Color.Black))
             .clip(shape)
-            .background(Color(0xD91B1E20))
-            .border(1.dp, if (active) Color(0x40FFFFFF) else Color(0x22FFFFFF), shape)
+            .background(Color(0xE61E1E24))
+            .border(1.dp, if (active) Color(0x33FFFFFF) else Color(0x1AFFFFFF), shape)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
@@ -53,7 +53,7 @@ fun WindowFrame(w: Win, wm: WindowManager, hidden: Boolean = false, content: @Co
     ) {
         Column(Modifier.fillMaxSize()) {
             Box(
-                Modifier.fillMaxWidth().height(34.dp).background(if (active) Color(0xD9232629) else Color(0xCC2A2E32))
+                Modifier.fillMaxWidth().height(34.dp).background(if (active) Color(0xE62C2C34) else Color(0xE0262630))
                     .pointerInput(w.maximized) {
                         if (!w.maximized) {
                             detectDragGestures { change, drag ->

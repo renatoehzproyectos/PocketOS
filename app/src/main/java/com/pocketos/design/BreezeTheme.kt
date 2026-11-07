@@ -17,24 +17,50 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.DrawScope
 
 object Breeze {
-    val Bg = Color(0xFF1B1E20)
-    val Panel = Color(0xFF232629)
-    val Surface = Color(0xFF31363B)
-    val Border = Color(0xFF4D4D4D)
-    val Text = Color(0xFFFCFCFC)
-    val Muted = Color(0xFFBDC3C7)
-    val Blue = Color(0xFF3DAEE9)
+    // Neutral graphite palette measured from the reference panel (rgb 44,44,52 base).
+    val Bg = Color(0xFF1E1E24)
+    val Panel = Color(0xFF2C2C34)
+    val Surface = Color(0xFF34343C)
+    val Border = Color(0xFF4A4A54)
+    val Text = Color(0xFFF2F2F4)
+    val Muted = Color(0xFFA6A6B0)
+    val Blue = Color(0xFF3B69C7) // workspace pill / accent sampled from the reference
+}
+
+/**
+ * Dock (taskbar) metrics. Every value is in dp of the 1920 px-wide shell layout and was
+ * measured on the 1024 px-wide reference screenshot (x 1.875).
+ */
+object Dock {
+    const val Height = 77f        // 41 px in the reference
+    const val BottomGap = 10f     // floating gap between the screen's bottom edge and the dock
+    const val IconSize = 47f      // 25 px
+    const val Pitch = 85f         // 45.2 px between icon centers
+    const val IconsStart = 700f   // left edge of the first slot (launcher)
+    const val IconsLift = 2f      // icons sit ~1 px above the bar's centre line
+    const val Alpha = 0.82f       // translucency of the panel
 }
 
 val LocalAccent = compositionLocalOf { Breeze.Blue }
 
-val Accents = listOf(0xFF3DAEE9, 0xFF1CDC9A, 0xFFF67400, 0xFFDA4453, 0xFF9B59B6, 0xFFFDBC4B)
+val Accents = listOf(0xFF3B69C7, 0xFF1CDC9A, 0xFFF67400, 0xFFDA4453, 0xFF9B59B6, 0xFFFDBC4B)
 
 val Wallpapers = listOf(
     listOf(Color(0xFF401071), Color(0xFF6F2B91), Color(0xFFAA387D), Color(0xFFEF7A9B)),
     listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)),
     listOf(Color(0xFF232526), Color(0xFF414345), Color(0xFF1B1E20)),
     listOf(Color(0xFF134E5E), Color(0xFF1CDC9A), Color(0xFF0B3D2E)),
+    // 4: Amethyst (fallback gradient; the real image is WallpaperRes[4])
+    listOf(Color(0xFF1F5F9E), Color(0xFF16304F), Color(0xFF0B1424)),
+)
+
+/** Image wallpapers by index in [Wallpapers]; null entries are drawn as gradients. */
+val WallpaperRes: List<Int?> = listOf(
+    R.drawable.wallpaper_plasma,
+    null,
+    null,
+    null,
+    R.drawable.wallpaper_amethyst,
 )
 
 /** Full-bleed angular purple Plasma-style wallpaper. Every shape closes to the
